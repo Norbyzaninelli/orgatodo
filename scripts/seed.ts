@@ -1,6 +1,7 @@
 /**
- * Carga una profesional de prueba para desarrollo: http://localhost:3000/demo
- * Ingreso al panel: demo@orgatodo.test / demo1234
+ * Carga datos de prueba para desarrollo:
+ * - Profesional: http://localhost:3000/demo (panel: demo@orgatodo.test / demo1234), administra el centro.
+ * - Centro: http://localhost:3000/espacio-demo con dos profesionales más (demo2@ y demo3@orgatodo.test, misma clave).
  * Uso: pnpm db:seed
  */
 import "dotenv/config";
@@ -13,8 +14,13 @@ async function main() {
   const existing = await db.query.professionals.findFirst({ where: eq(schema.professionals.slug, "demo") });
   if (existing) {
     console.log("Ya existe la profesional demo.");
-    return;
+  } else {
+    await seedProfessional();
   }
+  await seedCentro();
+}
+
+async function seedProfessional() {
 
   const { user } = await getAuth().api.signUpEmail({
     body: { name: "Laura Gómez", email: "demo@orgatodo.test", password: "demo1234" },
@@ -40,6 +46,7 @@ async function main() {
       bufferMinutes: 10,
       slotStepMinutes: 30,
       published: true,
+      isAdmin: true,
     })
     .returning();
 
@@ -67,6 +74,116 @@ async function main() {
   await seedHistory(pro.id, services);
 
   console.log("Profesional demo creada: /demo (panel: demo@orgatodo.test / demo1234)");
+}
+
+const TEAM = [
+  {
+    slug: "demo-martina",
+    name: "Martina Ruiz",
+    email: "demo2@orgatodo.test",
+    bio: "Masoterapeuta. Masajes descontracturantes y drenaje linfático.",
+    services: [
+      { name: "Masaje descontracturante", durationMinutes: 60, priceCents: 2800000 },
+      { name: "Drenaje linfático", durationMinutes: 50, priceCents: 2600000 },
+    ],
+  },
+  {
+    slug: "demo-pablo",
+    name: "Pablo Herrera",
+    email: "demo3@orgatodo.test",
+    bio: "Nutricionista. Planes de alimentación personalizados.",
+    services: [
+      { name: "Primera consulta de nutrición", durationMinutes: 60, priceCents: 3200000 },
+      { name: "Control", durationMinutes: 30, priceCents: 2000000 },
+    ],
+  },
+];
+
+/** Convierte a la profesional demo en administradora de un centro con dos profesionales más. */
+async function seedCentro() {
+  if (await db.query.organizations.findFirst({ where: eq(schema.organizations.slug, "espacio-demo") })) {
+    console.log("Ya existe el centro demo.");
+    return;
+  }
+  const laura = await db.query.professionals.findFirst({ where: eq(schema.professionals.slug, "demo") });
+  if (!laura) throw new Error("Falta la profesional demo");
+  await db
+    .update(schema.organizations)
+    .set({
+      kind: "centro",
+      slug: "espacio-demo",
+      name: "Espacio Salud Demo",
+      description: "Kinesiología, masajes y nutrición en un mismo lugar.",
+      address: "Av. Corrientes 1234, CABA",
+      phone: "+54 9 11 5555-5555",
+      published: true,
+    })
+    .where(eq(schema.organizations.id, laura.organizationId));
+
+  const tz = "America/Argentina/Buenos_Aires";
+  const today = toLocalDate(new Date(), tz);
+  const pros = [laura];
+  for (const member of TEAM) {
+    const { user } = await getAuth().api.signUpEmail({
+      body: { name: member.name, email: member.email, password: "demo1234" },
+    });
+    const [pro] = await db
+      .insert(schema.professionals)
+      .values({
+        organizationId: laura.organizationId,
+        userId: user.id,
+        slug: member.slug,
+        displayName: member.name,
+        email: member.email,
+        bio: member.bio,
+        address: "Av. Corrientes 1234, CABA",
+        minNoticeMinutes: 60,
+        published: true,
+      })
+      .returning();
+    await db
+      .insert(schema.services)
+      .values(member.services.map((service, position) => ({ ...service, professionalId: pro.id, position })));
+    await db.insert(schema.availabilityRules).values(
+      [1, 2, 3, 4, 5].map((weekday) => ({ professionalId: pro.id, weekday, startMinute: 10 * 60, endMinute: 18 * 60 })),
+    );
+    pros.push(pro);
+  }
+
+  // Turnos de hoy y mañana para ver la agenda del equipo.
+  const bookings: (typeof schema.bookings.$inferInsert)[] = [];
+  for (const [i, pro] of pros.entries()) {
+    const services = await db.select().from(schema.services).where(eq(schema.services.professionalId, pro.id));
+    const clients = await db
+      .insert(schema.clients)
+      .values(
+        ["Lucía Fernández", "Diego Castro", "Valentina López"].map((name, n) => ({
+          professionalId: pro.id,
+          name,
+          email: `equipo${i}-${n}@orgatodo.test`,
+        })),
+      )
+      .onConflictDoNothing()
+      .returning();
+    for (const [d, day] of [today, addDays(today, 1)].entries()) {
+      for (const [n, client] of clients.entries()) {
+        const service = services[(n + d) % services.length];
+        const startsAt = localToInstant(day, (11 + n * 2 + i) * 60, tz);
+        bookings.push({
+          professionalId: pro.id,
+          serviceId: service.id,
+          clientId: client.id,
+          startsAt,
+          endsAt: new Date(startsAt.getTime() + service.durationMinutes * 60_000),
+          status: "confirmado",
+          serviceName: service.name,
+          priceCents: service.priceCents,
+        });
+      }
+    }
+  }
+  await db.insert(schema.bookings).values(bookings);
+  console.log("Centro demo creado: /espacio-demo (equipo: demo2@ y demo3@orgatodo.test / demo1234)");
 }
 
 /** Turnos realizados y gastos de los últimos meses, para que el resumen tenga datos. */

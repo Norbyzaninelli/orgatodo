@@ -2,15 +2,22 @@ import Link from "next/link";
 import { signOutAction } from "@/app/(cuenta)/actions";
 import { PanelNav } from "@/components/panel-nav";
 import { requireProfessional } from "@/lib/auth";
+import { getOrganization } from "@/lib/centros";
 
 export default async function PanelLayout({ children }: LayoutProps<"/panel">) {
   const pro = await requireProfessional();
+  const org = await getOrganization(pro.organizationId);
   return (
     <div className="space-y-6">
       <div className="flex flex-wrap items-center justify-between gap-3">
         <div>
           <p className="text-sm text-muted">Hola,</p>
           <p className="text-xl font-bold tracking-tight">{pro.displayName}</p>
+          {org.kind === "centro" && (
+            <Link href="/panel/centro" className="text-sm text-muted hover:text-foreground">
+              {org.name}
+            </Link>
+          )}
         </div>
         <div className="flex items-center gap-3 text-sm">
           {pro.published ? (

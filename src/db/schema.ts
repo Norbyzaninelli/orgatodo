@@ -73,8 +73,40 @@ export const organizations = pgTable("organizations", {
   slug: text("slug").notNull().unique(),
   name: text("name").notNull(),
   kind: organizationKind("kind").notNull().default("independiente"),
+  /** Datos de la página pública del centro; un independiente usa los de su perfil. */
+  description: text("description"),
+  address: text("address"),
+  phone: text("phone"),
+  published: boolean("published").notNull().default(false),
   ...timestamps,
 });
+
+/** Invitación para sumarse a un centro. Se acepta con el link que lleva el token. */
+export const organizationInvites = pgTable(
+  "organization_invites",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    organizationId: uuid("organization_id")
+      .notNull()
+      .references(() => organizations.id, { onDelete: "cascade" }),
+    email: text("email").notNull(),
+    name: text("name"),
+    token: text("token")
+      .notNull()
+      .unique()
+      .$defaultFn(() => randomBytes(24).toString("hex")),
+    invitedBy: uuid("invited_by").references(() => professionals.id, { onDelete: "set null" }),
+    expiresAt: timestamp("expires_at", { withTimezone: true }).notNull(),
+    acceptedAt: timestamp("accepted_at", { withTimezone: true }),
+    ...timestamps,
+  },
+  (t) => [
+    // Una sola invitación pendiente por email en cada centro.
+    uniqueIndex("organization_invites_pending_idx")
+      .on(t.organizationId, t.email)
+      .where(sql`${t.acceptedAt} is null`),
+  ],
+);
 
 export const professionals = pgTable(
   "professionals",
@@ -87,6 +119,8 @@ export const professionals = pgTable(
     userId: text("user_id")
       .unique()
       .references(() => user.id, { onDelete: "set null" }),
+    /** Administra el centro: datos, equipo e invitaciones. Un independiente administra el suyo. */
+    isAdmin: boolean("is_admin").notNull().default(false),
     /** Dirección pública: orgatodo.com/<slug> */
     slug: text("slug").notNull().unique(),
     displayName: text("display_name").notNull(),
@@ -378,6 +412,8 @@ export const invoices = pgTable(
   ],
 );
 
+export type Organization = typeof organizations.$inferSelect;
+export type OrganizationInvite = typeof organizationInvites.$inferSelect;
 export type Professional = typeof professionals.$inferSelect;
 export type Service = typeof services.$inferSelect;
 export type Booking = typeof bookings.$inferSelect;

@@ -9,6 +9,7 @@ const LINKS = [
   { href: "/panel/resumen", label: "Resumen" },
   { href: "/panel/servicios", label: "Servicios" },
   { href: "/panel/horarios", label: "Horarios" },
+  { href: "/panel/centro", label: "Centro" },
   { href: "/panel/perfil", label: "Perfil" },
 ];
 
@@ -17,7 +18,7 @@ export function PanelNav() {
   return (
     <nav className="-mx-4 flex gap-1 overflow-x-auto px-4 lg:mx-0 lg:flex-col lg:overflow-visible lg:px-0">
       {LINKS.map((link) => {
-        const active = pathname === link.href;
+        const active = pathname === link.href || (link.href !== "/panel" && pathname.startsWith(`${link.href}/`));
         return (
           <Link
             key={link.href}

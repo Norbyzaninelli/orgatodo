@@ -8,6 +8,7 @@ import { z } from "zod";
 import { db, schema } from "@/db";
 import { getAuth } from "@/lib/auth";
 import type { FormState } from "@/lib/form-state";
+import { CentroError, claimInvite, findOpenInvite, isSlugTaken } from "@/lib/centros";
 import { isValidSlug } from "@/lib/slugs";
 
 const signUpSchema = z.object({
@@ -19,25 +20,19 @@ const signUpSchema = z.object({
     .trim()
     .toLowerCase()
     .refine(isValidSlug, "Usá entre 3 y 40 letras, números o guiones, sin espacios"),
+  /** Token de la invitación a un centro, si se registra desde ese link. */
+  invitacion: z.string().regex(/^[0-9a-f]{48}$/).optional().or(z.literal("")),
 });
 
 export async function signUpAction(_prev: FormState, formData: FormData): Promise<FormState> {
   const parsed = signUpSchema.safeParse(Object.fromEntries(formData));
   if (!parsed.success) return { error: parsed.error.issues[0].message };
-  const { name, email, password, slug } = parsed.data;
+  const { name, email, password, slug, invitacion } = parsed.data;
 
-  const taken = await db
-    .select({ id: schema.professionals.id })
-    .from(schema.professionals)
-    .where(eq(schema.professionals.slug, slug))
-    .union(
-      db
-        .select({ id: schema.organizations.id })
-        .from(schema.organizations)
-        .where(eq(schema.organizations.slug, slug)),
-    )
-    .limit(1);
-  if (taken.length > 0) return { error: `La dirección orgatodo.com/${slug} ya está tomada` };
+  if (await isSlugTaken(slug)) return { error: `La dirección orgatodo.com/${slug} ya está tomada` };
+  if (invitacion && !(await findOpenInvite(invitacion))) {
+    return { error: "La invitación venció o ya se usó. Pedile a tu centro que te mande otra." };
+  }
 
   let userId: string;
   try {
@@ -54,10 +49,11 @@ export async function signUpAction(_prev: FormState, formData: FormData): Promis
   }
 
   try {
-    await createProfessional(userId, name, email, slug);
+    await createProfessional(userId, name, email, slug, invitacion || undefined);
   } catch (error) {
     // Sin perfil la cuenta no sirve: se borra para que pueda volver a registrarse con el mismo email.
     await db.delete(schema.user).where(eq(schema.user.id, userId));
+    if (error instanceof CentroError) return { error: error.message };
     if (isUniqueViolation(error)) return { error: `La dirección orgatodo.com/${slug} ya está tomada` };
     throw error;
   }
@@ -74,12 +70,18 @@ function isUniqueViolation(error: unknown): boolean {
   return false;
 }
 
-async function createProfessional(userId: string, name: string, email: string, slug: string) {
+async function createProfessional(userId: string, name: string, email: string, slug: string, inviteToken?: string) {
   await db.transaction(async (tx) => {
-    const [org] = await tx.insert(schema.organizations).values({ slug, name }).returning();
+    // Con invitación entra al equipo del centro; si no, arranca como independiente y administra lo suyo.
+    let organizationId: string;
+    if (inviteToken) {
+      organizationId = (await claimInvite(tx, inviteToken)).organizationId;
+    } else {
+      [{ id: organizationId }] = await tx.insert(schema.organizations).values({ slug, name }).returning();
+    }
     const [pro] = await tx
       .insert(schema.professionals)
-      .values({ organizationId: org.id, userId, slug, displayName: name, email })
+      .values({ organizationId, userId, slug, displayName: name, email, isAdmin: !inviteToken })
       .returning();
     // Horario inicial de lunes a viernes de 9 a 18, para que solo tenga que ajustarlo.
     await tx.insert(schema.availabilityRules).values(
@@ -110,7 +112,7 @@ export async function signInAction(_prev: FormState, formData: FormData): Promis
 
   const back = parsed.data.volver;
   // Solo se vuelve a páginas del panel, nunca a otra dirección.
-  redirect(back && /^\/panel(\/[a-z-]*)?$/.test(back) ? back : "/panel");
+  redirect(back && /^\/(panel(\/[a-z-]*)?|unirme\/[0-9a-f]{48})$/.test(back) ? back : "/panel");
 }
 
 export async function signOutAction() {
