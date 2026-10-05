@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { SearchForm } from "@/components/search-form";
+import { RatingBadge } from "@/components/stars";
 import { searchListings, type Listing } from "@/lib/buscador";
 import { formatPrice, plural } from "@/lib/format";
 import { rubroLabel } from "@/lib/rubros";
@@ -57,6 +58,7 @@ function ListingCard({ listing }: { listing: Listing }) {
             {listing.rubro && <span className="text-xs font-medium uppercase tracking-wide text-muted">{listing.rubro}</span>}
           </div>
           <p className="text-lg font-semibold">{listing.name}</p>
+          <RatingBadge rating={listing.rating} />
           {listing.zona && <p className="text-sm text-muted">{listing.zona}</p>}
           {listing.team.length > 0 && <p className="text-sm text-muted">Con {listing.team.join(", ")}</p>}
           {listing.description && <p className="line-clamp-2 text-sm text-muted">{listing.description}</p>}

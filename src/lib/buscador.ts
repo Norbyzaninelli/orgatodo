@@ -1,5 +1,6 @@
 import { and, asc, eq, inArray, or, sql, type AnyColumn, type SQL } from "drizzle-orm";
 import { db, schema } from "@/db";
+import { combineRatings, ratingsFor, type RatingSummary } from "./resenas";
 import { RUBROS, isRubro, rubroLabel } from "./rubros";
 
 export interface SearchFilters {
@@ -26,6 +27,7 @@ export interface Listing {
   href: string;
   services: ListingService[];
   fromPriceCents: number | null;
+  rating: RatingSummary | null;
 }
 
 const MAX_RESULTS = 60;
@@ -124,6 +126,9 @@ export async function searchListings(filters: SearchFilters): Promise<Listing[]>
   const servicesOf = (id: string) => services.filter((s) => s.professionalId === id);
 
   const listings: Listing[] = [];
+  // Profesionales de cada tarjeta, para sumar sus reseñas.
+  const membersOf = new Map<Listing, string[]>();
+  const ratings = await ratingsFor(rows.map((r) => r.professional.id));
   const centros = new Map<string, Listing>();
   for (const { professional, organization } of rows) {
     const own = servicesOf(professional.id);
@@ -141,11 +146,13 @@ export async function searchListings(filters: SearchFilters): Promise<Listing[]>
           href: `/${organization.slug}`,
           services: [],
           fromPriceCents: null,
+          rating: null,
         };
         centros.set(organization.id, centro);
         listings.push(centro);
       }
       centro.team.push(professional.displayName);
+      membersOf.set(centro, [...(membersOf.get(centro) ?? []), professional.id]);
       centro.services.push(...own);
       // Muestra los rubros de quienes coinciden, no solo el del centro.
       const label = rubroLabel(professional.category ?? organization.category);
@@ -164,10 +171,13 @@ export async function searchListings(filters: SearchFilters): Promise<Listing[]>
         href: `/${professional.slug}`,
         services: own,
         fromPriceCents: null,
+        rating: ratings.get(professional.id) ?? null,
       });
     }
   }
   for (const listing of listings) {
+    const members = membersOf.get(listing);
+    if (members) listing.rating = combineRatings(members.map((id) => ratings.get(id)));
     listing.fromPriceCents = listing.services.length ? Math.min(...listing.services.map((s) => s.priceCents)) : null;
     listing.services = listing.services.slice(0, 3);
   }

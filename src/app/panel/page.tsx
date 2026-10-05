@@ -5,7 +5,8 @@ import { db, schema } from "@/db";
 import { requireProfessional } from "@/lib/auth";
 import { addDays, localToInstant, toLocalDate } from "@/lib/agenda/slots";
 import { formatLongDate, formatPrice, formatTime } from "@/lib/format";
-import { setBookingStatusAction, setPublishedAction } from "./actions";
+import { BookingActions } from "@/components/booking-actions";
+import { setPublishedAction } from "./actions";
 
 export const metadata: Metadata = { title: "Mis turnos" };
 
@@ -17,7 +18,8 @@ const STATUS = {
   cancelado: { label: "Cancelado", className: "bg-zinc-200 text-zinc-500 line-through dark:bg-zinc-800" },
 } as const;
 
-export default async function PanelHome() {
+export default async function PanelHome(props: PageProps<"/panel">) {
+  const { cargado } = await props.searchParams;
   const pro = await requireProfessional();
   const tz = pro.timezone;
   const now = new Date();
@@ -84,14 +86,21 @@ export default async function PanelHome() {
           <h2 className="text-sm font-semibold uppercase tracking-wide text-muted">¿Cómo salieron estos turnos?</h2>
           <ul className="space-y-2">
             {pending.map(({ booking, client }) => (
-              <BookingRow key={booking.id} booking={booking} client={client} tz={tz} showDate past />
+              <BookingRow key={booking.id} booking={booking} client={client} tz={tz} showDate now={now} />
             ))}
           </ul>
         </section>
       )}
 
+      {cargado && <p className="rounded-lg bg-brand-soft p-3 text-sm text-brand">Turno cargado.</p>}
+
       <section className="space-y-4">
-        <h2 className="text-sm font-semibold uppercase tracking-wide text-muted">Próximos turnos</h2>
+        <div className="flex items-center justify-between gap-3">
+          <h2 className="text-sm font-semibold uppercase tracking-wide text-muted">Próximos turnos</h2>
+          <Link href="/panel/turnos/nuevo" className="rounded-lg bg-brand px-3 py-1.5 text-sm font-semibold text-white hover:bg-brand-strong">
+            Cargar turno
+          </Link>
+        </div>
         {byDay.size === 0 ? (
           <p className="text-muted">
             No tenés turnos próximos.
@@ -112,7 +121,7 @@ export default async function PanelHome() {
               </h3>
               <ul className="space-y-2">
                 {dayRows.map(({ booking, client }) => (
-                  <BookingRow key={booking.id} booking={booking} client={client} tz={tz} />
+                  <BookingRow key={booking.id} booking={booking} client={client} tz={tz} now={now} />
                 ))}
               </ul>
             </div>
@@ -139,16 +148,15 @@ function BookingRow({
   client,
   tz,
   showDate,
-  past,
+  now,
 }: {
   booking: typeof schema.bookings.$inferSelect;
   client: typeof schema.clients.$inferSelect;
   tz: string;
   showDate?: boolean;
-  past?: boolean;
+  now: Date;
 }) {
   const status = STATUS[booking.status];
-  const active = booking.status === "reservado" || booking.status === "confirmado";
   return (
     <li className="flex flex-wrap items-center justify-between gap-3 rounded-xl border border-border bg-surface p-3">
       <div className="min-w-0">
@@ -171,32 +179,8 @@ function BookingRow({
       </div>
       <div className="flex flex-wrap items-center gap-2">
         <span className={`rounded-full px-2 py-0.5 text-xs font-medium ${status.className}`}>{status.label}</span>
-        {active && past && (
-          <>
-            <StatusButton id={booking.id} status="realizado" label="Realizado" />
-            <StatusButton id={booking.id} status="ausente" label="No vino" />
-          </>
-        )}
-        {active && !past && booking.status === "reservado" && (
-          <StatusButton id={booking.id} status="confirmado" label="Confirmar" />
-        )}
-        {active && !past && <StatusButton id={booking.id} status="cancelado" label="Cancelar" />}
+        <BookingActions booking={booking} now={now} />
       </div>
     </li>
-  );
-}
-
-function StatusButton({ id, status, label }: { id: string; status: string; label: string }) {
-  return (
-    <form action={setBookingStatusAction}>
-      <input type="hidden" name="bookingId" value={id} />
-      <input type="hidden" name="status" value={status} />
-      <button
-        type="submit"
-        className="rounded-lg border border-border px-2.5 py-1 text-sm font-medium transition hover:border-brand"
-      >
-        {label}
-      </button>
-    </form>
   );
 }

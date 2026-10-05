@@ -3,7 +3,9 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 import { cancelAction } from "@/app/actions";
 import { getBookingByToken } from "@/lib/agenda/booking";
+import { Stars } from "@/components/stars";
 import { formatLongDate, formatPrice, formatTime } from "@/lib/format";
+import { getReviewForToken } from "@/lib/resenas";
 
 export const metadata: Metadata = { title: "Tu turno", robots: { index: false } };
 
@@ -17,8 +19,9 @@ const STATUS_LABEL = {
 
 export default async function BookingPage(props: PageProps<"/turno/[token]">) {
   const { token } = await props.params;
-  const row = await getBookingByToken(token);
+  const [row, reviewRow] = await Promise.all([getBookingByToken(token), getReviewForToken(token)]);
   if (!row) notFound();
+  const review = reviewRow?.review ?? null;
   const { booking, professional } = row;
   const tz = professional.timezone;
   const canCancel =
@@ -57,6 +60,26 @@ export default async function BookingPage(props: PageProps<"/turno/[token]">) {
           </div>
         )}
       </dl>
+
+      {booking.status === "realizado" &&
+        (review ? (
+          <section className="space-y-1 rounded-xl border border-border bg-surface p-4">
+            <p className="text-sm font-semibold">Tu reseña</p>
+            <Stars value={review.rating} className="text-lg" />
+            {review.comment && <p className="text-sm">{review.comment}</p>}
+            <p className="text-sm text-muted">¡Gracias por contarnos cómo te fue!</p>
+          </section>
+        ) : (
+          <section className="flex flex-wrap items-center justify-between gap-3 rounded-xl border border-brand bg-surface p-4">
+            <p className="font-medium">¿Cómo te fue? Tu reseña ayuda a otras personas a elegir.</p>
+            <Link
+              href={`/turno/${token}/resena`}
+              className="rounded-lg bg-brand px-4 py-2 font-semibold text-white transition hover:bg-brand-strong"
+            >
+              Dejar reseña
+            </Link>
+          </section>
+        ))}
 
       <p className="text-sm text-muted">Guardá este link: desde acá podés ver o cancelar tu turno.</p>
 

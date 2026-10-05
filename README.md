@@ -11,6 +11,12 @@ El plan del producto y las decisiones fiscales están en el
 - Buscador público (`/buscar`, y el inicio): el cliente busca por servicio o nombre, rubro y zona,
   sin acentos. Los profesionales de un centro aparecen dentro de la tarjeta del centro. El rubro y
   la zona se cargan en el perfil y en los datos del centro (`src/lib/rubros.ts`).
+- Turnos cargados a mano (`/panel/turnos/nuevo`) para los que llegan por WhatsApp o teléfono: el
+  cliente puede no tener email, se le avisa si se marca, y nunca se pisan con otro turno. Quien
+  administra un centro carga y maneja (confirmar, cancelar, realizado) los turnos de todo el equipo.
+- Reseñas: al marcar un turno como realizado, el cliente recibe un link para puntuar de 1 a 5 y
+  comentar (`/turno/[token]/resena`). Se ven en la página, en el centro y en el buscador, y el
+  profesional las responde desde `/panel/resenas`.
 - Recuperar contraseña por email (`/recuperar` y `/restablecer`); al cambiarla se cierran las otras sesiones.
 - Página pública de cada profesional (`/<slug>`) con sus servicios.
 - Reserva de turnos: el cliente elige día y horario libre y deja sus datos, sin crear cuenta.
