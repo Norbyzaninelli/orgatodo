@@ -27,6 +27,18 @@ export const bookingStatus = pgEnum("booking_status", [
   "ausente",
 ]);
 
+export const notificationChannel = pgEnum("notification_channel", ["email", "whatsapp"]);
+export const notificationRecipient = pgEnum("notification_recipient", ["cliente", "profesional"]);
+export const notificationKind = pgEnum("notification_kind", [
+  "reserva_recibida",
+  "turno_confirmado",
+  "nuevo_turno",
+  "recordatorio",
+  "cancelado_por_cliente",
+  "cancelado_por_profesional",
+]);
+export const notificationStatus = pgEnum("notification_status", ["pendiente", "enviado", "fallido", "omitido"]);
+
 const timestamps = {
   createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
   updatedAt: timestamp("updated_at", { withTimezone: true })
@@ -79,6 +91,11 @@ export const professionals = pgTable(
     slotStepMinutes: integer("slot_step_minutes").notNull().default(30),
     autoConfirm: boolean("auto_confirm").notNull().default(true),
     worksOnHolidays: boolean("works_on_holidays").notNull().default(false),
+    /** Avisos al profesional cuando entra o se cancela un turno. */
+    notifyByWhatsapp: boolean("notify_by_whatsapp").notNull().default(true),
+    notifyByEmail: boolean("notify_by_email").notNull().default(true),
+    /** Horas antes del turno en que se manda el recordatorio al cliente; 0 = sin recordatorio. */
+    reminderHoursBefore: integer("reminder_hours_before").notNull().default(24),
     published: boolean("published").notNull().default(false),
     ...timestamps,
   },
@@ -191,6 +208,36 @@ export const bookings = pgTable(
   (t) => [index("bookings_professional_starts_idx").on(t.professionalId, t.startsAt)],
 );
 
+/**
+ * Cola de avisos. Cada aviso se guarda antes de mandarse, así un error del proveedor no pierde
+ * el mensaje y los recordatorios se mandan a la hora programada.
+ */
+export const notifications = pgTable(
+  "notifications",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    bookingId: uuid("booking_id")
+      .notNull()
+      .references(() => bookings.id, { onDelete: "cascade" }),
+    kind: notificationKind("kind").notNull(),
+    channel: notificationChannel("channel").notNull(),
+    recipient: notificationRecipient("recipient").notNull(),
+    /** Email o teléfono en formato internacional. */
+    address: text("address").notNull(),
+    scheduledAt: timestamp("scheduled_at", { withTimezone: true }).notNull().defaultNow(),
+    status: notificationStatus("status").notNull().default("pendiente"),
+    attempts: integer("attempts").notNull().default(0),
+    lastError: text("last_error"),
+    sentAt: timestamp("sent_at", { withTimezone: true }),
+    ...timestamps,
+  },
+  (t) => [
+    uniqueIndex("notifications_once_idx").on(t.bookingId, t.kind, t.channel, t.recipient),
+    index("notifications_due_idx").on(t.status, t.scheduledAt),
+  ],
+);
+
 export type Professional = typeof professionals.$inferSelect;
 export type Service = typeof services.$inferSelect;
 export type Booking = typeof bookings.$inferSelect;
+export type Notification = typeof notifications.$inferSelect;

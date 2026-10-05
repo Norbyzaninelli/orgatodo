@@ -124,8 +124,8 @@ export async function getBookingByToken(token: string) {
   return row ?? null;
 }
 
-/** El cliente cancela desde su link. Solo turnos futuros que sigan activos. */
-export async function cancelBookingByToken(token: string, now = new Date()): Promise<boolean> {
+/** El cliente cancela desde su link. Solo turnos futuros que sigan activos. Devuelve el id cancelado. */
+export async function cancelBookingByToken(token: string, now = new Date()): Promise<string | null> {
   const updated = await db
     .update(schema.bookings)
     .set({ status: "cancelado", cancelledAt: now })
@@ -137,5 +137,5 @@ export async function cancelBookingByToken(token: string, now = new Date()): Pro
       ),
     )
     .returning({ id: schema.bookings.id });
-  return updated.length > 0;
+  return updated[0]?.id ?? null;
 }
