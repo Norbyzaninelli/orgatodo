@@ -26,6 +26,10 @@ El plan del producto y las decisiones fiscales están en el
 - Facturación con ARCA (`/panel/facturacion`): conexión con el certificado propio del profesional,
   categoría de monotributo leída de la constancia, factura C y nota de crédito C desde cada turno
   realizado, comprobante con QR en `/factura/[token]` y envío por email. Ver "Facturación" más abajo.
+- Centros con varios profesionales (`/panel/centro`): un independiente arma su centro, invita
+  profesionales con un link por email o WhatsApp (`/unirme/[token]`), reparte la administración y
+  ve la agenda del día de todo el equipo. El centro tiene su página (`/<slug-del-centro>`) donde el
+  cliente elige profesional y servicio. Cada profesional sigue con su agenda y factura con su CUIT.
 
 ## Stack
 
@@ -39,18 +43,19 @@ Requisitos: Node 22, pnpm y PostgreSQL 16.
 pnpm install
 cp .env.example .env        # ajustá DATABASE_URL y generá BETTER_AUTH_SECRET con: openssl rand -hex 32
 pnpm db:migrate             # crea las tablas
-pnpm db:seed                # carga una profesional de prueba
-pnpm dev                    # http://localhost:3000/demo
+pnpm db:seed                # carga una profesional de prueba y un centro
+pnpm dev                    # http://localhost:3000/demo y /espacio-demo
 ```
 
-La profesional de prueba entra al panel con `demo@orgatodo.test` / `demo1234`.
+La profesional de prueba entra al panel con `demo@orgatodo.test` / `demo1234` y administra el
+centro demo; el resto del equipo entra con `demo2@orgatodo.test` y `demo3@orgatodo.test`, misma clave.
 
 ## Comandos
 
 | Comando | Qué hace |
 | --- | --- |
 | `pnpm dev` | Servidor de desarrollo |
-| `pnpm test` | Tests unitarios |
+| `pnpm test` | Tests (los de centros usan la base de `DATABASE_URL`: `DATABASE_URL=... pnpm test`) |
 | `pnpm lint` / `pnpm typecheck` | Chequeos de código |
 | `pnpm db:generate` | Genera una migración a partir de `src/db/schema.ts` |
 | `pnpm db:migrate` | Aplica las migraciones pendientes |
@@ -107,6 +112,7 @@ src/lib/arca/       WSAA, WSFEv1, constancia de inscripción, certificados y emi
 src/app/(cuenta)/   registro, ingreso y salida
 src/lib/agenda/     horarios disponibles, reservas y consultas
 src/lib/auth.ts     configuración de Better Auth y sesión del profesional
+src/lib/centros.ts  centros: equipo, invitaciones, administración y página pública
 src/lib/notifications/  cola, mensajes y envío de avisos
 drizzle/            migraciones SQL
 scripts/seed.ts     datos de prueba

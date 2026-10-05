@@ -43,6 +43,13 @@
       "when": 1791219861500,
       "tag": "0005_facturacion",
       "breakpoints": true
+    },
+    {
+      "idx": 6,
+      "version": "7",
+      "when": 1791222393022,
+      "tag": "0006_centros",
+      "breakpoints": true
     }
   ]
 }
