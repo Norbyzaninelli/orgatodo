@@ -5,6 +5,7 @@ import { revalidatePath } from "next/cache";
 import { z } from "zod";
 import { db, schema } from "@/db";
 import { requireProfessional } from "@/lib/auth";
+import { notifyBookingEvent } from "@/lib/notifications";
 import type { FormState } from "@/lib/form-state";
 import { parsePriceToCents, timeToMinutes } from "@/lib/time";
 
@@ -26,7 +27,7 @@ export async function setBookingStatusAction(formData: FormData) {
   const id = z.uuid().parse(formData.get("bookingId"));
   const status = z.enum(["confirmado", "realizado", "ausente", "cancelado"]).parse(formData.get("status"));
 
-  await db
+  const updated = await db
     .update(schema.bookings)
     .set({ status, cancelledAt: status === "cancelado" ? new Date() : null })
     .where(
@@ -35,7 +36,11 @@ export async function setBookingStatusAction(formData: FormData) {
         eq(schema.bookings.professionalId, pro.id),
         inArray(schema.bookings.status, ALLOWED_TRANSITIONS[status] as ("reservado" | "confirmado" | "realizado" | "ausente")[]),
       ),
-    );
+    )
+    .returning({ id: schema.bookings.id });
+
+  if (updated.length > 0 && status === "confirmado") await notifyBookingEvent(id, "confirmado");
+  if (updated.length > 0 && status === "cancelado") await notifyBookingEvent(id, "cancelado_por_profesional");
   revalidatePath("/panel");
   revalidatePublic(pro.slug);
 }
@@ -193,6 +198,9 @@ const profileSchema = z.object({
   maxDaysAhead: z.coerce.number().int().min(1).max(365),
   autoConfirm: z.string().optional(),
   worksOnHolidays: z.string().optional(),
+  notifyByWhatsapp: z.string().optional(),
+  notifyByEmail: z.string().optional(),
+  reminderHoursBefore: z.coerce.number().int().refine((n) => [0, 2, 12, 24, 48].includes(n)),
 });
 
 export async function saveProfileAction(_prev: FormState, formData: FormData): Promise<FormState> {
@@ -213,6 +221,9 @@ export async function saveProfileAction(_prev: FormState, formData: FormData): P
       maxDaysAhead: d.maxDaysAhead,
       autoConfirm: d.autoConfirm === "on",
       worksOnHolidays: d.worksOnHolidays === "on",
+      notifyByWhatsapp: d.notifyByWhatsapp === "on",
+      notifyByEmail: d.notifyByEmail === "on",
+      reminderHoursBefore: d.reminderHoursBefore,
     })
     .where(eq(schema.professionals.id, pro.id));
   revalidatePath("/panel", "layout");

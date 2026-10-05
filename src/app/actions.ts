@@ -4,6 +4,7 @@ import { redirect } from "next/navigation";
 import { revalidatePath } from "next/cache";
 import { z } from "zod";
 import { BookingError, bookingRequestSchema, cancelBookingByToken, createBooking } from "@/lib/agenda/booking";
+import { notifyBookingEvent } from "@/lib/notifications";
 
 export interface BookingFormState {
   error?: string;
@@ -24,6 +25,7 @@ export async function reserveAction(_prev: BookingFormState, formData: FormData)
   try {
     const booking = await createBooking(parsed.data);
     token = booking.manageToken;
+    await notifyBookingEvent(booking.id, "creado");
   } catch (error) {
     if (error instanceof BookingError) return { error: error.message };
     throw error;
@@ -35,6 +37,7 @@ export async function reserveAction(_prev: BookingFormState, formData: FormData)
 
 export async function cancelAction(formData: FormData) {
   const token = String(formData.get("token") ?? "");
-  await cancelBookingByToken(token);
+  const cancelledId = await cancelBookingByToken(token);
+  if (cancelledId) await notifyBookingEvent(cancelledId, "cancelado_por_cliente");
   revalidatePath(`/turno/${token}`);
 }

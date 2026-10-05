@@ -6,6 +6,14 @@ import { saveProfileAction, setPublishedAction } from "../actions";
 
 export const metadata: Metadata = { title: "Perfil" };
 
+const REMINDER_OPTIONS = [
+  [0, "No mandar recordatorio"],
+  [2, "2 horas antes"],
+  [12, "12 horas antes"],
+  [24, "1 día antes"],
+  [48, "2 días antes"],
+] as const;
+
 const STEP_OPTIONS = [10, 15, 20, 30, 45, 60];
 const NOTICE_OPTIONS = [
   [0, "Sin anticipación"],
@@ -49,7 +57,7 @@ export default async function ProfilePage() {
               <input name="address" maxLength={200} defaultValue={pro.address ?? ""} className={inputClass} />
             </label>
             <label className="block text-sm">
-              Teléfono
+              Celular (WhatsApp)
               <input name="phone" type="tel" maxLength={30} defaultValue={pro.phone ?? ""} className={inputClass} />
             </label>
           </div>
@@ -114,6 +122,32 @@ export default async function ProfilePage() {
               className="accent-[var(--brand)]"
             />
             Atiendo los feriados
+          </label>
+        </section>
+
+        <section className="space-y-3">
+          <h2 className="text-sm font-semibold uppercase tracking-wide text-muted">Avisos</h2>
+          <p className="text-sm text-muted">
+            Tus clientes reciben la confirmación por email y por WhatsApp si dejaron un celular.
+          </p>
+          <label className="block text-sm">
+            Recordatorio al cliente
+            <select name="reminderHoursBefore" defaultValue={pro.reminderHoursBefore} className={inputClass}>
+              {REMINDER_OPTIONS.map(([value, label]) => (
+                <option key={value} value={value}>
+                  {label}
+                </option>
+              ))}
+            </select>
+          </label>
+          <p className="text-sm font-medium">Avisarme cuando entra o se cancela un turno</p>
+          <label className="flex items-center gap-2 text-sm">
+            <input name="notifyByWhatsapp" type="checkbox" defaultChecked={pro.notifyByWhatsapp} className="accent-[var(--brand)]" />
+            Por WhatsApp{!pro.phone && <span className="text-muted">(cargá tu celular arriba)</span>}
+          </label>
+          <label className="flex items-center gap-2 text-sm">
+            <input name="notifyByEmail" type="checkbox" defaultChecked={pro.notifyByEmail} className="accent-[var(--brand)]" />
+            Por email a {pro.email}
           </label>
         </section>
       </ActionForm>
