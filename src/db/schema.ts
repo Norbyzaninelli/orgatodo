@@ -1,12 +1,15 @@
 import { randomBytes } from "node:crypto";
+import { sql } from "drizzle-orm";
 import {
   bigint,
   boolean,
   date,
   index,
   integer,
+  jsonb,
   pgEnum,
   pgTable,
+  primaryKey,
   smallint,
   text,
   timestamp,
@@ -36,6 +39,10 @@ export const paymentMethod = pgEnum("payment_method", [
   "otro",
 ]);
 export const expenseCategory = pgEnum("expense_category", ["alquiler", "insumos", "monotributo", "otros"]);
+
+export const arcaEnvironment = pgEnum("arca_environment", ["simulado", "homologacion", "produccion"]);
+export const invoiceType = pgEnum("invoice_type", ["factura_c", "nota_credito_c"]);
+export const invoiceStatus = pgEnum("invoice_status", ["emitiendo", "emitida", "rechazada", "anulada"]);
 
 export const notificationChannel = pgEnum("notification_channel", ["email", "whatsapp"]);
 export const notificationRecipient = pgEnum("notification_recipient", ["cliente", "profesional"]);
@@ -107,8 +114,6 @@ export const professionals = pgTable(
     /** Horas antes del turno en que se manda el recordatorio al cliente; 0 = sin recordatorio. */
     reminderHoursBefore: integer("reminder_hours_before").notNull().default(24),
     published: boolean("published").notNull().default(false),
-    /** Tope anual de ingresos de su categoría de monotributo, cargado por el profesional. */
-    incomeCapCents: bigint("income_cap_cents", { mode: "number" }),
     ...timestamps,
   },
   (t) => [index("professionals_organization_idx").on(t.organizationId)],
@@ -269,8 +274,114 @@ export const notifications = pgTable(
   ],
 );
 
+/**
+ * Conexión de un profesional con ARCA usando su propio certificado digital.
+ * La clave privada se genera acá y se guarda cifrada; nunca sale de la plataforma.
+ */
+export const arcaConnections = pgTable("arca_connections", {
+  id: uuid("id").primaryKey().defaultRandom(),
+  professionalId: uuid("professional_id")
+    .notNull()
+    .unique()
+    .references(() => professionals.id, { onDelete: "cascade" }),
+  environment: arcaEnvironment("environment").notNull(),
+  cuit: text("cuit").notNull(),
+  /** Punto de venta para web services, distinto del de Comprobantes en línea. */
+  pointOfSale: integer("point_of_sale").notNull(),
+  privateKeyEncrypted: text("private_key_encrypted").notNull(),
+  csrPem: text("csr_pem").notNull(),
+  certificatePem: text("certificate_pem"),
+  certificateExpiresAt: timestamp("certificate_expires_at", { withTimezone: true }),
+  /** Última vez que la conexión respondió bien. */
+  verifiedAt: timestamp("verified_at", { withTimezone: true }),
+  lastError: text("last_error"),
+  /** Datos de la constancia de inscripción. */
+  legalName: text("legal_name"),
+  fiscalAddress: text("fiscal_address"),
+  /** Letra de la categoría de monotributo (A a K). */
+  monotributoCategory: text("monotributo_category"),
+  monotributoCategoryDescription: text("monotributo_category_description"),
+  categoryCheckedAt: timestamp("category_checked_at", { withTimezone: true }),
+  /** Leyendas del comprobante que no informa ARCA. */
+  grossIncomeNumber: text("gross_income_number"),
+  activityStartDate: date("activity_start_date"),
+  ...timestamps,
+});
+
+/** Permisos de acceso de WSAA, válidos unas horas. ARCA rechaza pedir otro mientras uno sigue vigente. */
+export const arcaTickets = pgTable(
+  "arca_tickets",
+  {
+    connectionId: uuid("connection_id")
+      .notNull()
+      .references(() => arcaConnections.id, { onDelete: "cascade" }),
+    service: text("service").notNull(),
+    token: text("token").notNull(),
+    sign: text("sign").notNull(),
+    expiresAt: timestamp("expires_at", { withTimezone: true }).notNull(),
+  },
+  (t) => [primaryKey({ columns: [t.connectionId, t.service] })],
+);
+
+/** Comprobantes emitidos. Se conservan aunque se borre el profesional: hay que guardarlos 10 años. */
+export const invoices = pgTable(
+  "invoices",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    professionalId: uuid("professional_id")
+      .notNull()
+      .references(() => professionals.id, { onDelete: "restrict" }),
+    bookingId: uuid("booking_id").references(() => bookings.id, { onDelete: "set null" }),
+    /** Factura a la que anula una nota de crédito. */
+    creditsInvoiceId: uuid("credits_invoice_id"),
+    environment: arcaEnvironment("environment").notNull(),
+    type: invoiceType("type").notNull(),
+    status: invoiceStatus("status").notNull().default("emitiendo"),
+    cuit: text("cuit").notNull(),
+    pointOfSale: integer("point_of_sale").notNull(),
+    /** Se asigna al pedir el CAE, con el último autorizado + 1. */
+    number: integer("number"),
+    issueDate: date("issue_date").notNull(),
+    serviceFrom: date("service_from").notNull(),
+    serviceTo: date("service_to").notNull(),
+    paymentDueDate: date("payment_due_date").notNull(),
+    description: text("description").notNull(),
+    amountCents: bigint("amount_cents", { mode: "number" }).notNull(),
+    /** Receptor: 80 CUIT, 96 DNI, 99 consumidor final sin identificar. */
+    recipientDocType: smallint("recipient_doc_type").notNull(),
+    recipientDocNumber: text("recipient_doc_number").notNull(),
+    recipientName: text("recipient_name").notNull(),
+    recipientEmail: text("recipient_email"),
+    /** Condición frente al IVA del receptor según la tabla de ARCA (5 = consumidor final). */
+    recipientVatCondition: smallint("recipient_vat_condition").notNull(),
+    cae: text("cae"),
+    caeExpiresAt: date("cae_expires_at"),
+    /** Observaciones o errores de ARCA, en texto. */
+    arcaMessages: text("arca_messages"),
+    /** Último pedido y respuesta, para auditoría. */
+    arcaLog: jsonb("arca_log"),
+    publicToken: text("public_token")
+      .notNull()
+      .unique()
+      .$defaultFn(() => randomBytes(24).toString("hex")),
+    ...timestamps,
+  },
+  (t) => [
+    index("invoices_professional_date_idx").on(t.professionalId, t.issueDate),
+    uniqueIndex("invoices_number_idx")
+      .on(t.environment, t.cuit, t.pointOfSale, t.type, t.number)
+      .where(sql`${t.number} is not null and ${t.status} <> 'rechazada'`),
+    // Un turno tiene a lo sumo una factura viva; con una nota de crédito queda anulada y se puede volver a facturar.
+    uniqueIndex("invoices_booking_live_idx")
+      .on(t.bookingId)
+      .where(sql`${t.type} = 'factura_c' and ${t.status} in ('emitiendo', 'emitida')`),
+  ],
+);
+
 export type Professional = typeof professionals.$inferSelect;
 export type Service = typeof services.$inferSelect;
 export type Booking = typeof bookings.$inferSelect;
 export type Notification = typeof notifications.$inferSelect;
 export type Expense = typeof expenses.$inferSelect;
+export type ArcaConnection = typeof arcaConnections.$inferSelect;
+export type Invoice = typeof invoices.$inferSelect;

@@ -22,7 +22,10 @@ El plan del producto y las decisiones fiscales están en el
   cancelaciones al profesional. Ver "Avisos" más abajo.
 - Resumen de ingresos y gastos (`/panel/resumen`): ingresos por turnos realizados, cobrado y por
   cobrar con medio de pago, gastos cargados a mano por categoría, resultado del mes, gráfico de
-  los últimos 6 meses y avance de los últimos 12 meses contra el tope de la categoría.
+  los últimos 6 meses y lo facturado en los últimos 12 meses contra el límite de la categoría.
+- Facturación con ARCA (`/panel/facturacion`): conexión con el certificado propio del profesional,
+  categoría de monotributo leída de la constancia, factura C y nota de crédito C desde cada turno
+  realizado, comprobante con QR en `/factura/[token]` y envío por email. Ver "Facturación" más abajo.
 
 ## Stack
 
@@ -68,6 +71,25 @@ programada.
 
 Sin esas claves, los avisos se escriben en el log del servidor con el prefijo `[avisos:prueba]`.
 
+## Facturación
+
+Cada profesional factura con su propio CUIT y certificado digital:
+
+1. Carga CUIT y un punto de venta "RECE para aplicativo y web services". La plataforma genera la
+   clave privada (queda cifrada con `ARCA_CLAVE_CIFRADO`) y el pedido de certificado (CSR).
+2. En ARCA crea el certificado con ese pedido y lo asocia a los servicios `wsfe` y
+   `ws_sr_constancia_inscripcion` en el Administrador de Relaciones.
+3. Sube el certificado. Se prueba la conexión y se lee la categoría de monotributo.
+
+Los comprobantes se numeran de a uno por punto de venta con un lock de Postgres. El número se
+guarda antes de pedir el CAE; si la respuesta se pierde, "Reintentar" consulta a ARCA si ese número
+quedó autorizado antes de pedir otro.
+
+`ARCA_MODO=simulado` (por defecto) imita a ARCA sin salir a internet y ofrece un certificado de
+prueba. `homologacion` usa el ambiente de prueba de ARCA, que necesita un certificado de
+homologación (servicio "WSASS" con clave fiscal). Los límites por categoría están en
+`src/lib/arca/categorias.ts` y se actualizan cuando ARCA publica la tabla nueva.
+
 ## Estructura
 
 ```
@@ -75,6 +97,7 @@ src/app/            páginas y acciones del servidor
 src/components/     componentes de interfaz
 src/db/             esquema y conexión a la base
 src/app/panel/      panel del profesional y sus acciones
+src/lib/arca/       WSAA, WSFEv1, constancia de inscripción, certificados y emisión
 src/app/(cuenta)/   registro, ingreso y salida
 src/lib/agenda/     horarios disponibles, reservas y consultas
 src/lib/auth.ts     configuración de Better Auth y sesión del profesional
