@@ -78,6 +78,10 @@ export const organizations = pgTable("organizations", {
   address: text("address"),
   phone: text("phone"),
   published: boolean("published").notNull().default(false),
+  /** Para el buscador: rubro (clave de src/lib/rubros.ts), localidad o barrio y provincia. */
+  category: text("category"),
+  city: text("city"),
+  province: text("province"),
   ...timestamps,
 });
 
@@ -128,6 +132,10 @@ export const professionals = pgTable(
     phone: text("phone"),
     bio: text("bio"),
     address: text("address"),
+    /** Para el buscador: rubro (clave de src/lib/rubros.ts), localidad o barrio y provincia. */
+    category: text("category"),
+    city: text("city"),
+    province: text("province"),
     /** Datos fiscales; se completan al conectar la facturación. */
     cuit: text("cuit"),
     taxCondition: taxCondition("tax_condition").default("monotributo"),

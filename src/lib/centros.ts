@@ -54,7 +54,16 @@ export async function convertToCentro(pro: Professional, input: { name: string; 
   }
   await db
     .update(schema.organizations)
-    .set({ kind: "centro", name: input.name, slug: input.slug, address: pro.address, phone: pro.phone })
+    .set({
+      kind: "centro",
+      name: input.name,
+      slug: input.slug,
+      address: pro.address,
+      phone: pro.phone,
+      category: pro.category,
+      city: pro.city,
+      province: pro.province,
+    })
     .where(eq(schema.organizations.id, org.id));
 }
 

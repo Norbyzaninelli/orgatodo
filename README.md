@@ -8,6 +8,10 @@ El plan del producto y las decisiones fiscales están en el
 
 ## Qué hay hoy
 
+- Buscador público (`/buscar`, y el inicio): el cliente busca por servicio o nombre, rubro y zona,
+  sin acentos. Los profesionales de un centro aparecen dentro de la tarjeta del centro. El rubro y
+  la zona se cargan en el perfil y en los datos del centro (`src/lib/rubros.ts`).
+- Recuperar contraseña por email (`/recuperar` y `/restablecer`); al cambiarla se cierran las otras sesiones.
 - Página pública de cada profesional (`/<slug>`) con sus servicios.
 - Reserva de turnos: el cliente elige día y horario libre y deja sus datos, sin crear cuenta.
 - Link privado del turno (`/turno/<token>`) para verlo o cancelarlo.

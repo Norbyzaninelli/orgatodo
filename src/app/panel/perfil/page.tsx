@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import { ActionForm } from "@/components/action-form";
+import { ListingFields } from "@/components/listing-fields";
 import { requireProfessional } from "@/lib/auth";
 import { inputClass } from "@/lib/form-state";
 import { saveProfileAction, setPublishedAction } from "../actions";
@@ -61,6 +62,8 @@ export default async function ProfilePage() {
               <input name="phone" type="tel" maxLength={30} defaultValue={pro.phone ?? ""} className={inputClass} />
             </label>
           </div>
+          <ListingFields category={pro.category} city={pro.city} province={pro.province} />
+          <p className="text-sm text-muted">Con el rubro y la zona te encuentran en el buscador de ORGATODO.</p>
         </section>
 
         <section className="space-y-3">

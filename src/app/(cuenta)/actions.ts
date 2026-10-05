@@ -119,3 +119,37 @@ export async function signOutAction() {
   await getAuth().api.signOut({ headers: await headers() });
   redirect("/");
 }
+
+const requestResetSchema = z.object({ email: z.email("Ingresá un email válido").trim().toLowerCase() });
+
+/** Siempre responde lo mismo, exista o no la cuenta, para no revelar qué emails están registrados. */
+export async function requestPasswordResetAction(_prev: FormState, formData: FormData): Promise<FormState> {
+  const parsed = requestResetSchema.safeParse(Object.fromEntries(formData));
+  if (!parsed.success) return { error: parsed.error.issues[0].message };
+  try {
+    await getAuth().api.requestPasswordReset({ body: { email: parsed.data.email }, headers: await headers() });
+  } catch (error) {
+    console.error("[cuenta] no se pudo pedir el cambio de contraseña", error);
+  }
+  return { ok: `Si hay una cuenta con ${parsed.data.email}, te mandamos un email con un link para elegir una contraseña nueva.` };
+}
+
+const resetSchema = z
+  .object({
+    token: z.string().min(1),
+    password: z.string().min(8, "La contraseña tiene que tener al menos 8 caracteres").max(128),
+    confirm: z.string(),
+  })
+  .refine((data) => data.password === data.confirm, { message: "Las dos contraseñas no coinciden" });
+
+export async function resetPasswordAction(_prev: FormState, formData: FormData): Promise<FormState> {
+  const parsed = resetSchema.safeParse(Object.fromEntries(formData));
+  if (!parsed.success) return { error: parsed.error.issues[0].message };
+  try {
+    await getAuth().api.resetPassword({ body: { token: parsed.data.token, newPassword: parsed.data.password } });
+  } catch (error) {
+    if (error instanceof APIError) return { error: "El link venció o ya se usó. Pedí uno nuevo." };
+    throw error;
+  }
+  redirect("/ingresar?restablecida=1");
+}

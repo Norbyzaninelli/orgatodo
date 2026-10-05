@@ -1,7 +1,7 @@
 /** Direcciones que no puede tomar un profesional porque las usa la plataforma. */
 export const RESERVED_SLUGS = new Set([
   "admin", "api", "app", "ayuda", "cuenta", "facturacion", "ingresar", "login", "panel",
-  "planes", "precios", "registro", "soporte", "turno", "turnos", "unirme", "factura",
+  "planes", "precios", "registro", "soporte", "turno", "turnos", "unirme", "factura", "recuperar", "restablecer", "buscar", "explorar",
 ]);
 
 export function isValidSlug(slug: string): boolean {

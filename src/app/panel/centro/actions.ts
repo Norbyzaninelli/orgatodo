@@ -18,6 +18,7 @@ import {
   setAdmin,
 } from "@/lib/centros";
 import type { FormState } from "@/lib/form-state";
+import { listingSchema } from "@/lib/listing";
 import { textToHtml } from "@/lib/notifications/messages";
 import { sendEmail } from "@/lib/notifications/providers";
 import { isValidSlug } from "@/lib/slugs";
@@ -59,7 +60,7 @@ export async function convertToCentroAction(_prev: FormState, formData: FormData
   redirect("/panel/centro");
 }
 
-const centroSchema = z.object({
+const centroSchema = listingSchema.extend({
   name: z.string().trim().min(2, "Ingresá el nombre del centro").max(120),
   slug: slugField,
   description: z.string().trim().max(600),
@@ -71,13 +72,22 @@ export async function saveCentroAction(_prev: FormState, formData: FormData): Pr
   const { org } = await requireAdmin();
   const parsed = centroSchema.safeParse(Object.fromEntries(formData));
   if (!parsed.success) return { error: parsed.error.issues[0].message };
-  const { name, slug, description, address, phone } = parsed.data;
+  const { name, slug, description, address, phone, category, city, province } = parsed.data;
   if (slug !== org.slug && (await isSlugTaken(slug, org.id))) {
     return { error: `La dirección orgatodo.com/${slug} ya está tomada` };
   }
   await db
     .update(schema.organizations)
-    .set({ name, slug, description: description || null, address: address || null, phone: phone || null })
+    .set({
+      name,
+      slug,
+      description: description || null,
+      address: address || null,
+      phone: phone || null,
+      category,
+      city,
+      province,
+    })
     .where(eq(schema.organizations.id, org.id));
   revalidateCentro(org.slug);
   revalidateCentro(slug);

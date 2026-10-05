@@ -7,6 +7,7 @@ import { db, schema } from "@/db";
 import { requireProfessional } from "@/lib/auth";
 import { notifyBookingEvent } from "@/lib/notifications";
 import type { FormState } from "@/lib/form-state";
+import { listingSchema } from "@/lib/listing";
 import { parsePriceToCents, timeToMinutes } from "@/lib/time";
 
 function revalidatePublic(slug: string) {
@@ -246,7 +247,7 @@ export async function deleteExpenseAction(formData: FormData) {
 
 // --- Perfil ---------------------------------------------------------------
 
-const profileSchema = z.object({
+const profileSchema = listingSchema.extend({
   displayName: z.string().trim().min(2, "Ingresá tu nombre").max(120),
   bio: z.string().trim().max(600).optional(),
   phone: z.string().trim().max(30).optional(),
@@ -274,6 +275,9 @@ export async function saveProfileAction(_prev: FormState, formData: FormData): P
       bio: d.bio || null,
       phone: d.phone || null,
       address: d.address || null,
+      category: d.category,
+      city: d.city,
+      province: d.province,
       minNoticeMinutes: d.minNoticeMinutes,
       bufferMinutes: d.bufferMinutes,
       slotStepMinutes: d.slotStepMinutes,
