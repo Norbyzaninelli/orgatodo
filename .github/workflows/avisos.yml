@@ -1,0 +1,26 @@
+# Manda los recordatorios programados llamando al cron del sitio cada 15 minutos.
+# Necesita los secretos APP_URL (por ejemplo https://orgatodo.com) y CRON_SECRET del repositorio.
+name: Avisos programados
+
+on:
+  schedule:
+    - cron: "*/15 * * * *"
+  workflow_dispatch:
+
+jobs:
+  avisos:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - name: Llamar a /api/cron/avisos
+        env:
+          APP_URL: ${{ secrets.APP_URL }}
+          CRON_SECRET: ${{ secrets.CRON_SECRET }}
+        run: |
+          if [ -z "$APP_URL" ] || [ -z "$CRON_SECRET" ]; then
+            echo "Faltan los secretos APP_URL o CRON_SECRET; no se llama al cron."
+            exit 0
+          fi
+          curl --fail-with-body --silent --show-error --max-time 60 \
+            -H "Authorization: Bearer $CRON_SECRET" \
+            "${APP_URL%/}/api/cron/avisos"

@@ -15,7 +15,7 @@ const LINKS = [
 export function PanelNav() {
   const pathname = usePathname();
   return (
-    <nav className="-mx-4 flex gap-1 overflow-x-auto px-4">
+    <nav className="-mx-4 flex gap-1 overflow-x-auto px-4 lg:mx-0 lg:flex-col lg:overflow-visible lg:px-0">
       {LINKS.map((link) => {
         const active = pathname === link.href;
         return (
@@ -23,7 +23,7 @@ export function PanelNav() {
             key={link.href}
             href={link.href}
             className={[
-              "shrink-0 rounded-lg px-3 py-2 text-sm font-medium transition",
+              "shrink-0 rounded-lg px-3 py-2 text-sm font-medium transition lg:text-base",
               active ? "bg-brand-soft text-brand" : "text-muted hover:text-foreground",
             ].join(" ")}
           >

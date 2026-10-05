@@ -243,95 +243,97 @@ async function Connected({
         <ActionForm action={verifyConnectionAction} submitLabel="Probar conexión" pendingLabel="Probando..." className="space-y-2" />
       </div>
 
-      <section className="space-y-3">
-        <div>
-          <h2 className="text-sm font-semibold uppercase tracking-wide text-muted">Turnos para facturar</h2>
-          <p className="text-sm text-muted">Turnos realizados que todavía no tienen factura, del más reciente al más viejo.</p>
-        </div>
-        {toInvoice.length === 0 ? (
-          <p className="text-muted">No hay turnos realizados sin facturar.</p>
-        ) : (
-          <ul className="space-y-2">
-            {toInvoice.map(({ booking, client }) => (
-              <li key={booking.id} className="rounded-xl border border-border bg-surface p-3">
-                <details>
-                  <summary className="flex cursor-pointer list-none flex-wrap items-center justify-between gap-3">
-                    <span className="min-w-0">
-                      <span className="block font-semibold">
-                        {client.name} · {formatPrice(booking.priceCents)}
+      <div className="grid gap-8 xl:grid-cols-2">
+        <section className="space-y-3">
+          <div>
+            <h2 className="text-sm font-semibold uppercase tracking-wide text-muted">Turnos para facturar</h2>
+            <p className="text-sm text-muted">Turnos realizados que todavía no tienen factura, del más reciente al más viejo.</p>
+          </div>
+          {toInvoice.length === 0 ? (
+            <p className="text-muted">No hay turnos realizados sin facturar.</p>
+          ) : (
+            <ul className="space-y-2">
+              {toInvoice.map(({ booking, client }) => (
+                <li key={booking.id} className="rounded-xl border border-border bg-surface p-3">
+                  <details>
+                    <summary className="flex cursor-pointer list-none flex-wrap items-center justify-between gap-3">
+                      <span className="min-w-0">
+                        <span className="block font-semibold">
+                          {client.name} · {formatPrice(booking.priceCents)}
+                        </span>
+                        <span className="block text-sm text-muted">
+                          {capitalize(formatLongDate(booking.startsAt, timezone))} · {booking.serviceName}
+                        </span>
                       </span>
-                      <span className="block text-sm text-muted">
-                        {capitalize(formatLongDate(booking.startsAt, timezone))} · {booking.serviceName}
-                      </span>
-                    </span>
-                    <span className="rounded-lg border border-border px-2.5 py-1 text-sm font-medium">Facturar</span>
-                  </summary>
-                  <div className="mt-3 border-t border-border pt-3">
-                    <ActionForm action={invoiceBookingAction} submitLabel="Emitir factura C" pendingLabel="Pidiendo el CAE...">
-                      <InvoiceFields bookingId={booking.id} defaultDni={client.documentNumber} hasEmail={Boolean(client.email)} />
-                    </ActionForm>
-                  </div>
-                </details>
-              </li>
-            ))}
-          </ul>
-        )}
-      </section>
-
-      <section className="space-y-3">
-        <h2 className="text-sm font-semibold uppercase tracking-wide text-muted">Comprobantes</h2>
-        {invoices.length === 0 ? (
-          <p className="text-muted">Todavía no emitiste comprobantes.</p>
-        ) : (
-          <ul className="space-y-2">
-            {invoices.map((inv) => {
-              const chip = formatDayChip(inv.issueDate);
-              return (
-                <li key={inv.id} className="space-y-2 rounded-xl border border-border bg-surface p-3">
-                  <div className="flex flex-wrap items-center justify-between gap-3">
-                    <div className="min-w-0">
-                      <p className="font-semibold">
-                        {INVOICE_TYPE_LABEL[inv.type]} {inv.number ? voucherNumber(inv) : ""} · {formatPrice(inv.amountCents)}
-                      </p>
-                      <p className="text-sm text-muted">
-                        {chip.weekday} {chip.day} {chip.month} · {inv.recipientName} · {inv.description}
-                      </p>
+                      <span className="rounded-lg border border-border px-2.5 py-1 text-sm font-medium">Facturar</span>
+                    </summary>
+                    <div className="mt-3 border-t border-border pt-3">
+                      <ActionForm action={invoiceBookingAction} submitLabel="Emitir factura C" pendingLabel="Pidiendo el CAE...">
+                        <InvoiceFields bookingId={booking.id} defaultDni={client.documentNumber} hasEmail={Boolean(client.email)} />
+                      </ActionForm>
                     </div>
-                    <div className="flex items-center gap-3 text-sm">
-                      <InvoiceStatus status={inv.status} />
-                      {(inv.status === "emitida" || inv.status === "anulada") && (
-                        <Link href={`/factura/${inv.publicToken}`} className="font-medium text-brand hover:underline" target="_blank">
-                          Ver
-                        </Link>
-                      )}
-                    </div>
-                  </div>
-                  {inv.arcaMessages && inv.status !== "emitida" && <p className="text-sm text-danger">{inv.arcaMessages}</p>}
-                  {inv.status === "emitiendo" && (
-                    <ActionForm action={retryInvoiceAction} submitLabel="Reintentar" pendingLabel="Consultando a ARCA...">
-                      <input type="hidden" name="invoiceId" value={inv.id} />
-                    </ActionForm>
-                  )}
-                  {inv.status === "emitida" && inv.type === "factura_c" && (
-                    <details className="text-sm">
-                      <summary className="cursor-pointer text-muted">Anular con nota de crédito</summary>
-                      <div className="mt-2">
-                        <ActionForm action={creditInvoiceAction} submitLabel="Emitir nota de crédito C" pendingLabel="Pidiendo el CAE...">
-                          <input type="hidden" name="invoiceId" value={inv.id} />
-                          <p className="text-muted">
-                            Se emite una nota de crédito por {formatPrice(inv.amountCents)} que anula esta factura. El turno vuelve a
-                            quedar para facturar.
-                          </p>
-                        </ActionForm>
-                      </div>
-                    </details>
-                  )}
+                  </details>
                 </li>
-              );
-            })}
-          </ul>
-        )}
-      </section>
+              ))}
+            </ul>
+          )}
+        </section>
+
+        <section className="space-y-3">
+          <h2 className="text-sm font-semibold uppercase tracking-wide text-muted">Comprobantes</h2>
+          {invoices.length === 0 ? (
+            <p className="text-muted">Todavía no emitiste comprobantes.</p>
+          ) : (
+            <ul className="space-y-2">
+              {invoices.map((inv) => {
+                const chip = formatDayChip(inv.issueDate);
+                return (
+                  <li key={inv.id} className="space-y-2 rounded-xl border border-border bg-surface p-3">
+                    <div className="flex flex-wrap items-center justify-between gap-3">
+                      <div className="min-w-0">
+                        <p className="font-semibold">
+                          {INVOICE_TYPE_LABEL[inv.type]} {inv.number ? voucherNumber(inv) : ""} · {formatPrice(inv.amountCents)}
+                        </p>
+                        <p className="text-sm text-muted">
+                          {chip.weekday} {chip.day} {chip.month} · {inv.recipientName} · {inv.description}
+                        </p>
+                      </div>
+                      <div className="flex items-center gap-3 text-sm">
+                        <InvoiceStatus status={inv.status} />
+                        {(inv.status === "emitida" || inv.status === "anulada") && (
+                          <Link href={`/factura/${inv.publicToken}`} className="font-medium text-brand hover:underline" target="_blank">
+                            Ver
+                          </Link>
+                        )}
+                      </div>
+                    </div>
+                    {inv.arcaMessages && inv.status !== "emitida" && <p className="text-sm text-danger">{inv.arcaMessages}</p>}
+                    {inv.status === "emitiendo" && (
+                      <ActionForm action={retryInvoiceAction} submitLabel="Reintentar" pendingLabel="Consultando a ARCA...">
+                        <input type="hidden" name="invoiceId" value={inv.id} />
+                      </ActionForm>
+                    )}
+                    {inv.status === "emitida" && inv.type === "factura_c" && (
+                      <details className="text-sm">
+                        <summary className="cursor-pointer text-muted">Anular con nota de crédito</summary>
+                        <div className="mt-2">
+                          <ActionForm action={creditInvoiceAction} submitLabel="Emitir nota de crédito C" pendingLabel="Pidiendo el CAE...">
+                            <input type="hidden" name="invoiceId" value={inv.id} />
+                            <p className="text-muted">
+                              Se emite una nota de crédito por {formatPrice(inv.amountCents)} que anula esta factura. El turno vuelve a
+                              quedar para facturar.
+                            </p>
+                          </ActionForm>
+                        </div>
+                      </details>
+                    )}
+                  </li>
+                );
+              })}
+            </ul>
+          )}
+        </section>
+      </div>
 
       <section className="space-y-3">
         <div>

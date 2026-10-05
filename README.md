@@ -90,6 +90,12 @@ prueba. `homologacion` usa el ambiente de prueba de ARCA, que necesita un certif
 homologación (servicio "WSASS" con clave fiscal). Los límites por categoría están en
 `src/lib/arca/categorias.ts` y se actualizan cuando ARCA publica la tabla nueva.
 
+## Publicar
+
+Vercel (región São Paulo) con base en Neon; los recordatorios los dispara el workflow
+`.github/workflows/avisos.yml` cada 15 minutos. Paso a paso en [docs/publicar.md](docs/publicar.md).
+La web se adapta a computadora y celular, y se puede instalar como app.
+
 ## Estructura
 
 ```

@@ -12,7 +12,7 @@ export default async function SignInPage(props: PageProps<"/ingresar">) {
   if (await getSession()) redirect("/panel");
   const { volver } = await props.searchParams;
   return (
-    <div className="mx-auto max-w-sm space-y-6">
+    <div className="mx-auto w-full max-w-sm space-y-6">
       <h1 className="text-2xl font-bold tracking-tight">Ingresá a tu panel</h1>
       <ActionForm action={signInAction} submitLabel="Ingresar" pendingLabel="Ingresando...">
         {typeof volver === "string" && <input type="hidden" name="volver" value={volver} />}

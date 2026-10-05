@@ -9,7 +9,9 @@ const globalForDb = globalThis as unknown as { orgatodoDb?: Database };
 function connect(): Database {
   const url = process.env.DATABASE_URL;
   if (!url) throw new Error("Falta DATABASE_URL");
-  return drizzle(postgres(url, { max: 10 }), { schema });
+  // En Vercel cada función abre pocas conexiones y pasa por el pooler de Neon, que no admite
+  // sentencias preparadas con nombre.
+  return drizzle(postgres(url, { max: process.env.VERCEL ? 3 : 10, prepare: false }), { schema });
 }
 
 function getDb(): Database {

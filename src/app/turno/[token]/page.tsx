@@ -25,7 +25,7 @@ export default async function BookingPage(props: PageProps<"/turno/[token]">) {
     (booking.status === "reservado" || booking.status === "confirmado") && booking.startsAt > new Date();
 
   return (
-    <div className="space-y-6">
+    <div className="mx-auto w-full max-w-3xl space-y-6">
       <div className="space-y-1">
         <p className="text-sm font-semibold uppercase tracking-wide text-brand">
           {STATUS_LABEL[booking.status]}

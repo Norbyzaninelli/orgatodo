@@ -8,6 +8,11 @@ import { INVOICE_TYPE_LABEL, voucherNumber } from "./qr";
 /** Manda al cliente el link a su comprobante. Un error queda en el log y no afecta la emisión. */
 export async function emailInvoice(invoice: Invoice, professionalName: string) {
   if (!invoice.recipientEmail || invoice.status !== "emitida") return;
+  // Un comprobante de prueba nunca le llega a un cliente real.
+  if (invoice.environment !== "produccion") {
+    console.info(`[facturacion:prueba] no se envía el comprobante ${invoice.id} (${invoice.environment}) a ${invoice.recipientEmail}`);
+    return;
+  }
   const label = INVOICE_TYPE_LABEL[invoice.type];
   const url = `${appUrl()}/factura/${invoice.publicToken}`;
   const text = [

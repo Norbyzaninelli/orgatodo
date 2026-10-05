@@ -38,7 +38,7 @@ export default async function ServiceBookingPage(props: PageProps<"/[slug]/[serv
   const tz = professional.timezone;
 
   return (
-    <div className="space-y-8">
+    <div className="mx-auto w-full max-w-3xl space-y-8">
       <div className="space-y-1">
         <Link href={`/${professional.slug}`} className="text-sm text-brand hover:underline">
           ← {professional.displayName}
@@ -51,7 +51,7 @@ export default async function ServiceBookingPage(props: PageProps<"/[slug]/[serv
 
       <section className="space-y-3">
         <h2 className="text-sm font-semibold uppercase tracking-wide text-muted">Elegí el día</h2>
-        <div className="-mx-4 flex gap-2 overflow-x-auto px-4 pb-2">
+        <div className="-mx-4 flex gap-2 overflow-x-auto px-4 pb-2 sm:mx-0 sm:flex-wrap sm:overflow-visible sm:px-0">
           {days.map((day) => {
             const chip = formatDayChip(day.date);
             const active = day.date === selected.date;

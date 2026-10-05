@@ -2,7 +2,7 @@ import Link from "next/link";
 
 export default function Home() {
   return (
-    <section className="space-y-6 py-10">
+    <section className="mx-auto w-full max-w-3xl space-y-6 py-10">
       <h1 className="text-4xl font-bold tracking-tight sm:text-5xl">
         Tus turnos y tu facturación, <span className="text-brand">en un solo lugar.</span>
       </h1>
