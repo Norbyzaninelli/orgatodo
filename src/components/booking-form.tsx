@@ -1,6 +1,6 @@
 "use client";
 
-import { useActionState } from "react";
+import { startTransition, useActionState, type FormEvent } from "react";
 import { reserveAction, type BookingFormState } from "@/app/actions";
 
 interface Props {
@@ -15,8 +15,15 @@ const inputClass =
 export function BookingForm({ professionalSlug, serviceId, startsAt }: Props) {
   const [state, action, pending] = useActionState<BookingFormState, FormData>(reserveAction, {});
 
+  // Se envía a mano para que un error no borre lo que la persona escribió.
+  function onSubmit(event: FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+    const data = new FormData(event.currentTarget);
+    startTransition(() => action(data));
+  }
+
   return (
-    <form action={action} className="space-y-3">
+    <form onSubmit={onSubmit} className="space-y-3">
       <input type="hidden" name="professionalSlug" value={professionalSlug} />
       <input type="hidden" name="serviceId" value={serviceId} />
       <input type="hidden" name="startsAt" value={startsAt} />

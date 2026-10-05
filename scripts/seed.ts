@@ -1,10 +1,12 @@
 /**
  * Carga una profesional de prueba para desarrollo: http://localhost:3000/demo
+ * Ingreso al panel: demo@orgatodo.test / demo1234
  * Uso: pnpm db:seed
  */
 import "dotenv/config";
 import { eq } from "drizzle-orm";
 import { db, schema } from "../src/db";
+import { getAuth } from "../src/lib/auth";
 
 async function main() {
   const existing = await db.query.professionals.findFirst({ where: eq(schema.professionals.slug, "demo") });
@@ -12,6 +14,10 @@ async function main() {
     console.log("Ya existe la profesional demo.");
     return;
   }
+
+  const { user } = await getAuth().api.signUpEmail({
+    body: { name: "Laura Gómez", email: "demo@orgatodo.test", password: "demo1234" },
+  });
 
   const [org] = await db
     .insert(schema.organizations)
@@ -22,6 +28,7 @@ async function main() {
     .insert(schema.professionals)
     .values({
       organizationId: org.id,
+      userId: user.id,
       slug: "demo",
       displayName: "Laura Gómez",
       email: "demo@orgatodo.test",
@@ -56,7 +63,7 @@ async function main() {
   rules.push({ professionalId: pro.id, weekday: 6, startMinute: 9 * 60, endMinute: 12 * 60 });
   await db.insert(schema.availabilityRules).values(rules);
 
-  console.log("Profesional demo creada: /demo");
+  console.log("Profesional demo creada: /demo (panel: demo@orgatodo.test / demo1234)");
 }
 
 main()

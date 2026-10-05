@@ -12,6 +12,9 @@ import {
   uniqueIndex,
   uuid,
 } from "drizzle-orm/pg-core";
+import { user } from "./auth-schema";
+
+export * from "./auth-schema";
 
 export const organizationKind = pgEnum("organization_kind", ["independiente", "centro"]);
 export const taxCondition = pgEnum("tax_condition", ["monotributo"]);
@@ -51,6 +54,10 @@ export const professionals = pgTable(
     organizationId: uuid("organization_id")
       .notNull()
       .references(() => organizations.id, { onDelete: "cascade" }),
+    /** Usuario que administra este perfil. */
+    userId: text("user_id")
+      .unique()
+      .references(() => user.id, { onDelete: "set null" }),
     /** Dirección pública: orgatodo.com/<slug> */
     slug: text("slug").notNull().unique(),
     displayName: text("display_name").notNull(),
