@@ -39,7 +39,7 @@ export default async function InvoicePage(props: PageProps<"/factura/[token]">) 
   const simulated = invoice.environment !== "produccion";
 
   return (
-    <div className="space-y-4">
+    <div className="mx-auto w-full max-w-3xl space-y-4">
       <div className="flex flex-wrap items-center justify-between gap-3 print:hidden">
         <p className="text-sm text-muted">Comprobante emitido por {professional.displayName} a través de ORGATODO.</p>
         <PrintButton />

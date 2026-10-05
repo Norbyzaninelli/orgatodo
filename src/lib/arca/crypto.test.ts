@@ -59,3 +59,21 @@ describe("certificado", () => {
     expect(forge.asn1.toDer(msg.rawCapture.content).getBytes()).toContain("<loginTicketRequest/>");
   });
 });
+
+describe("clave de cifrado configurada", () => {
+  it("acepta hexadecimal y base64", async () => {
+    const hex = "a".repeat(64);
+    const original = process.env.ARCA_CLAVE_CIFRADO;
+    try {
+      process.env.ARCA_CLAVE_CIFRADO = hex;
+      const withHex = encrypt("x");
+      process.env.ARCA_CLAVE_CIFRADO = Buffer.from(hex, "hex").toString("base64");
+      expect(decrypt(withHex)).toBe("x");
+      process.env.ARCA_CLAVE_CIFRADO = "corta";
+      expect(() => encrypt("x")).toThrow(/32 bytes/);
+    } finally {
+      if (original === undefined) delete process.env.ARCA_CLAVE_CIFRADO;
+      else process.env.ARCA_CLAVE_CIFRADO = original;
+    }
+  });
+});

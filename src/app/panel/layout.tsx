@@ -27,8 +27,12 @@ export default async function PanelLayout({ children }: LayoutProps<"/panel">) {
           </form>
         </div>
       </div>
-      <PanelNav />
-      {children}
+      <div className="space-y-6 lg:grid lg:grid-cols-[13rem_minmax(0,1fr)] lg:gap-10 lg:space-y-0">
+        <aside className="lg:sticky lg:top-6 lg:self-start">
+          <PanelNav />
+        </aside>
+        <div className="min-w-0">{children}</div>
+      </div>
     </div>
   );
 }

@@ -3,13 +3,14 @@ import forge from "node-forge";
 
 /**
  * Clave para cifrar las claves privadas de los profesionales. En producción tiene que venir de
- * ARCA_CLAVE_CIFRADO (32 bytes en base64); en desarrollo se deriva del secreto de sesiones.
+ * ARCA_CLAVE_CIFRADO (32 bytes en hexadecimal o base64); en desarrollo se deriva del secreto de sesiones.
  */
 function encryptionKey(): Buffer {
-  const configured = process.env.ARCA_CLAVE_CIFRADO;
+  const configured = process.env.ARCA_CLAVE_CIFRADO?.trim();
   if (configured) {
-    const key = Buffer.from(configured, "base64");
-    if (key.length !== 32) throw new Error("ARCA_CLAVE_CIFRADO tiene que tener 32 bytes en base64");
+    // Acepta 32 bytes en hexadecimal (64 caracteres) o en base64.
+    const key = /^[0-9a-f]{64}$/i.test(configured) ? Buffer.from(configured, "hex") : Buffer.from(configured, "base64");
+    if (key.length !== 32) throw new Error("ARCA_CLAVE_CIFRADO tiene que tener 32 bytes, en hexadecimal o base64");
     return key;
   }
   if (process.env.ARCA_MODO === "produccion") throw new Error("Falta ARCA_CLAVE_CIFRADO");

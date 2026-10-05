@@ -17,7 +17,7 @@ export default async function ProfessionalPage(props: PageProps<"/[slug]">) {
   const { professional, services } = data;
 
   return (
-    <div className="space-y-8">
+    <div className="mx-auto w-full max-w-3xl space-y-8">
       <section className="space-y-2">
         <h1 className="text-3xl font-bold tracking-tight">{professional.displayName}</h1>
         {professional.bio && <p className="text-muted">{professional.bio}</p>}
