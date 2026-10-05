@@ -2,6 +2,9 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { and, asc, desc, eq, gte, isNull, lt } from "drizzle-orm";
 import { ActionForm } from "@/components/action-form";
+import { categoryLimitCents } from "@/lib/arca/categorias";
+import { getConnection } from "@/lib/arca/connection";
+import { netInvoicedCents } from "@/lib/arca/qr";
 import { db, schema } from "@/db";
 import { requireProfessional } from "@/lib/auth";
 import { localToInstant, toLocalDate } from "@/lib/agenda/slots";
@@ -21,8 +24,7 @@ import {
   summarizeByMonth,
   type ExpenseCategory,
 } from "@/lib/resumen";
-import { centsToInput } from "@/lib/time";
-import { addExpenseAction, deleteExpenseAction, saveIncomeCapAction, setPaidAction } from "../actions";
+import { addExpenseAction, deleteExpenseAction, setPaidAction } from "../actions";
 
 export const metadata: Metadata = { title: "Resumen" };
 
@@ -39,7 +41,8 @@ export default async function SummaryPage({ searchParams }: PageProps<"/panel/re
   const from = monthBounds(months[0]).first;
   const to = monthBounds(month).next;
 
-  const [done, expenses, unpaid] = await Promise.all([
+  const connection = await getConnection(pro.id);
+  const [done, expenses, unpaid, issuedInvoices] = await Promise.all([
     db
       .select({ startsAt: schema.bookings.startsAt, priceCents: schema.bookings.priceCents, paidAt: schema.bookings.paidAt })
       .from(schema.bookings)
@@ -69,6 +72,19 @@ export default async function SummaryPage({ searchParams }: PageProps<"/panel/re
       )
       .orderBy(asc(schema.bookings.startsAt))
       .limit(50),
+    connection
+      ? db
+          .select({ type: schema.invoices.type, status: schema.invoices.status, amountCents: schema.invoices.amountCents })
+          .from(schema.invoices)
+          .where(
+            and(
+              eq(schema.invoices.professionalId, pro.id),
+              eq(schema.invoices.environment, connection.environment),
+              gte(schema.invoices.issueDate, from),
+              lt(schema.invoices.issueDate, to),
+            ),
+          )
+      : Promise.resolve([]),
   ]);
 
   const summary = summarizeByMonth(
@@ -78,8 +94,9 @@ export default async function SummaryPage({ searchParams }: PageProps<"/panel/re
   );
   const current = summary.get(month)!;
   const monthExpenses = expenses.filter((e) => monthOf(e.date) === month);
-  const yearIncome = [...summary.values()].reduce((sum, s) => sum + s.incomeCents, 0);
-  const cap = capProgress(yearIncome, pro.incomeCapCents);
+  const invoiced12 = netInvoicedCents(issuedInvoices);
+  const limit = categoryLimitCents(connection?.monotributoCategory ?? null, to);
+  const cap = connection?.verifiedAt ? capProgress(invoiced12, limit) : null;
   const chart = months.slice(-6).map((m) => summary.get(m)!);
   const chartMax = Math.max(1, ...chart.map((s) => Math.max(s.incomeCents, s.expensesCents)));
   const defaultExpenseDate = month === currentMonth ? today : monthBounds(month).first;
@@ -162,10 +179,20 @@ export default async function SummaryPage({ searchParams }: PageProps<"/panel/re
 
       <section className="space-y-3">
         <div>
-          <h2 className="text-sm font-semibold uppercase tracking-wide text-muted">Tope del monotributo</h2>
-          <p className="text-sm text-muted">
-            Ingresos de los últimos 12 meses hasta {formatMonth(month)}: <strong className="text-foreground">{formatPrice(yearIncome)}</strong>
-          </p>
+          <h2 className="text-sm font-semibold uppercase tracking-wide text-muted">Categoría del monotributo</h2>
+          {!connection?.verifiedAt ? (
+            <p className="text-sm text-muted">
+              <Link href="/panel/facturacion" className="font-medium text-brand hover:underline">
+                Conectá tu facturación
+              </Link>{" "}
+              y leemos tu categoría de ARCA para avisarte cuánto llevás facturado contra su límite.
+            </p>
+          ) : (
+            <p className="text-sm text-muted">
+              Categoría <strong className="text-foreground">{connection.monotributoCategory ?? "sin dato"}</strong> · facturado en los
+              últimos 12 meses hasta {formatMonth(month)}: <strong className="text-foreground">{formatPrice(invoiced12)}</strong>
+            </p>
+          )}
         </div>
         {cap && (
           <div className="space-y-1">
@@ -176,27 +203,15 @@ export default async function SummaryPage({ searchParams }: PageProps<"/panel/re
               />
             </div>
             <p className={`text-sm ${cap.level === "excedido" ? "text-danger" : "text-muted"}`}>
-              {Math.round(cap.ratio * 100)}% de {formatPrice(cap.capCents)}
-              {cap.level === "cerca" && ". Estás cerca del tope de tu categoría."}
-              {cap.level === "excedido" && ". Superaste el tope de tu categoría: consultá con tu contador."}
+              {Math.round(cap.ratio * 100)}% del límite de la categoría {connection?.monotributoCategory}, {formatPrice(cap.capCents)}
+              {cap.level === "cerca" && ". Estás cerca del límite."}
+              {cap.level === "excedido" && ". Superaste el límite de tu categoría: consultá con tu contador."}
             </p>
           </div>
         )}
-        <ActionForm action={saveIncomeCapAction} submitLabel="Guardar tope" className="flex flex-wrap items-end gap-3">
-          <label className="block text-sm">
-            Tope anual de tu categoría ($)
-            <input
-              name="incomeCap"
-              inputMode="decimal"
-              defaultValue={pro.incomeCapCents ? centsToInput(pro.incomeCapCents) : ""}
-              placeholder="Por ejemplo 10000000"
-              className={inputClass}
-            />
-          </label>
-        </ActionForm>
-        <p className="text-xs text-muted">
-          Por ahora cuenta los turnos realizados. Cuando esté la facturación, va a contar lo facturado.
-        </p>
+        {connection?.verifiedAt && connection.monotributoCategory && !cap && (
+          <p className="text-xs text-muted">Todavía no cargamos la tabla de límites vigente de ARCA.</p>
+        )}
       </section>
 
       <section className="space-y-3">

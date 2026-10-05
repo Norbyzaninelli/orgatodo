@@ -244,16 +244,6 @@ export async function deleteExpenseAction(formData: FormData) {
   revalidatePath("/panel/resumen");
 }
 
-export async function saveIncomeCapAction(_prev: FormState, formData: FormData): Promise<FormState> {
-  const pro = await requireProfessional();
-  const raw = String(formData.get("incomeCap") ?? "").trim();
-  const incomeCapCents = raw === "" ? null : parsePriceToCents(raw);
-  if (raw !== "" && !incomeCapCents) return { error: "Ingresá el tope en pesos, por ejemplo 10000000" };
-  await db.update(schema.professionals).set({ incomeCapCents }).where(eq(schema.professionals.id, pro.id));
-  revalidatePath("/panel/resumen");
-  return { ok: incomeCapCents ? "Tope guardado" : "Tope borrado" };
-}
-
 // --- Perfil ---------------------------------------------------------------
 
 const profileSchema = z.object({

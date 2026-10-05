@@ -7,7 +7,7 @@ interface Props {
   action: (prev: FormState, formData: FormData) => Promise<FormState>;
   submitLabel: string;
   pendingLabel?: string;
-  children: ReactNode;
+  children?: ReactNode;
   className?: string;
   /** Vacía el formulario después de guardar bien, para cargar otro. */
   resetOnSuccess?: boolean;
