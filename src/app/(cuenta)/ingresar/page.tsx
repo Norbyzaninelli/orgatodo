@@ -10,10 +10,11 @@ export const metadata: Metadata = { title: "Ingresar" };
 
 export default async function SignInPage(props: PageProps<"/ingresar">) {
   if (await getSession()) redirect("/panel");
-  const { volver } = await props.searchParams;
+  const { volver, restablecida } = await props.searchParams;
   return (
     <div className="mx-auto w-full max-w-sm space-y-6">
       <h1 className="text-2xl font-bold tracking-tight">Ingresá a tu panel</h1>
+      {restablecida && <p className="rounded-lg bg-brand-soft p-3 text-sm text-brand">Listo, ya podés ingresar con tu contraseña nueva.</p>}
       <ActionForm action={signInAction} submitLabel="Ingresar" pendingLabel="Ingresando...">
         {typeof volver === "string" && <input type="hidden" name="volver" value={volver} />}
         <label className="block text-sm">
@@ -25,6 +26,11 @@ export default async function SignInPage(props: PageProps<"/ingresar">) {
           <input name="password" type="password" required autoComplete="current-password" className={inputClass} />
         </label>
       </ActionForm>
+      <p className="text-sm">
+        <Link href="/recuperar" className="text-muted hover:text-foreground">
+          Olvidé mi contraseña
+        </Link>
+      </p>
       <p className="text-sm text-muted">
         ¿Todavía no tenés cuenta?{" "}
         <Link href="/registro" className="font-medium text-brand hover:underline">
