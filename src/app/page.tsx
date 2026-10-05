@@ -1,3 +1,5 @@
+import Link from "next/link";
+
 export default function Home() {
   return (
     <section className="space-y-6 py-10">
@@ -9,6 +11,17 @@ export default function Home() {
         servicios, tus clientes reservan online, reciben recordatorios y vos facturás cada turno
         con ARCA sin salir de la app.
       </p>
+      <div className="flex flex-wrap gap-3">
+        <Link
+          href="/registro"
+          className="rounded-lg bg-brand px-5 py-3 font-semibold text-white transition hover:bg-brand-strong"
+        >
+          Crear mi cuenta
+        </Link>
+        <Link href="/ingresar" className="rounded-lg border border-border px-5 py-3 font-semibold transition hover:border-brand">
+          Ingresar
+        </Link>
+      </div>
       <ul className="grid gap-3 sm:grid-cols-3">
         {[
           ["Agenda online", "Tus clientes eligen día y horario desde tu página."],
