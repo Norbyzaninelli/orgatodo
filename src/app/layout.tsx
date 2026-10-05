@@ -22,9 +22,14 @@ export default function RootLayout({ children }: LayoutProps<"/">) {
             <Link href="/" className="text-lg font-bold tracking-tight text-brand">
               ORGATODO
             </Link>
-            <Link href="/panel" className="text-sm font-medium text-muted hover:text-foreground">
-              Mi panel
-            </Link>
+            <nav className="flex items-center gap-5 text-sm font-medium text-muted">
+              <Link href="/buscar" className="hover:text-foreground">
+                Buscar turnos
+              </Link>
+              <Link href="/panel" className="hover:text-foreground">
+                Mi panel
+              </Link>
+            </nav>
           </div>
         </header>
         <main className="mx-auto w-full max-w-6xl flex-1 px-4 py-8 sm:px-6">{children}</main>

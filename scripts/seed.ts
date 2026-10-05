@@ -42,6 +42,9 @@ async function seedProfessional() {
       phone: "+54 9 11 5555-5555",
       bio: "Kinesióloga. Atención particular en consultorio y sesiones virtuales.",
       address: "Av. Corrientes 1234, CABA",
+      category: "kinesiologia",
+      city: "Almagro",
+      province: "Ciudad de Buenos Aires",
       minNoticeMinutes: 60,
       bufferMinutes: 10,
       slotStepMinutes: 30,
@@ -82,6 +85,7 @@ const TEAM = [
     name: "Martina Ruiz",
     email: "demo2@orgatodo.test",
     bio: "Masoterapeuta. Masajes descontracturantes y drenaje linfático.",
+    category: "masajes",
     services: [
       { name: "Masaje descontracturante", durationMinutes: 60, priceCents: 2800000 },
       { name: "Drenaje linfático", durationMinutes: 50, priceCents: 2600000 },
@@ -92,6 +96,7 @@ const TEAM = [
     name: "Pablo Herrera",
     email: "demo3@orgatodo.test",
     bio: "Nutricionista. Planes de alimentación personalizados.",
+    category: "nutricion",
     services: [
       { name: "Primera consulta de nutrición", durationMinutes: 60, priceCents: 3200000 },
       { name: "Control", durationMinutes: 30, priceCents: 2000000 },
@@ -116,6 +121,9 @@ async function seedCentro() {
       description: "Kinesiología, masajes y nutrición en un mismo lugar.",
       address: "Av. Corrientes 1234, CABA",
       phone: "+54 9 11 5555-5555",
+      category: "kinesiologia",
+      city: "Almagro",
+      province: "Ciudad de Buenos Aires",
       published: true,
     })
     .where(eq(schema.organizations.id, laura.organizationId));
@@ -136,6 +144,9 @@ async function seedCentro() {
         displayName: member.name,
         email: member.email,
         bio: member.bio,
+        category: member.category,
+        city: "Almagro",
+        province: "Ciudad de Buenos Aires",
         address: "Av. Corrientes 1234, CABA",
         minNoticeMinutes: 60,
         published: true,

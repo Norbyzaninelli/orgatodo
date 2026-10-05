@@ -3,6 +3,7 @@ import Link from "next/link";
 import { and, asc, eq, gt, isNull } from "drizzle-orm";
 import { ActionForm } from "@/components/action-form";
 import { CopyButton } from "@/components/copy-button";
+import { ListingFields } from "@/components/listing-fields";
 import { db, schema } from "@/db";
 import { requireProfessional } from "@/lib/auth";
 import { getOrganization, inviteUrl, listMembers } from "@/lib/centros";
@@ -205,6 +206,7 @@ export default async function CentroPage(props: PageProps<"/panel/centro">) {
                   <input name="phone" type="tel" maxLength={30} defaultValue={org.phone ?? ""} className={inputClass} />
                 </label>
               </div>
+              <ListingFields category={org.category} city={org.city} province={org.province} />
             </ActionForm>
           </section>
 
