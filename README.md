@@ -20,6 +20,9 @@ El plan del producto y las decisiones fiscales están en el
   publicación de la página.
 - Avisos por email y WhatsApp: confirmación y recordatorio al cliente, aviso de turno nuevo y de
   cancelaciones al profesional. Ver "Avisos" más abajo.
+- Resumen de ingresos y gastos (`/panel/resumen`): ingresos por turnos realizados, cobrado y por
+  cobrar con medio de pago, gastos cargados a mano por categoría, resultado del mes, gráfico de
+  los últimos 6 meses y avance de los últimos 12 meses contra el tope de la categoría.
 
 ## Stack
 

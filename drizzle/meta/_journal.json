@@ -29,6 +29,13 @@
       "when": 1791217919167,
       "tag": "0003_avisos",
       "breakpoints": true
+    },
+    {
+      "idx": 4,
+      "version": "7",
+      "when": 1791218727537,
+      "tag": "0004_ingresos_y_gastos",
+      "breakpoints": true
     }
   ]
 }

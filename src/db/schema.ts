@@ -1,5 +1,6 @@
 import { randomBytes } from "node:crypto";
 import {
+  bigint,
   boolean,
   date,
   index,
@@ -26,6 +27,15 @@ export const bookingStatus = pgEnum("booking_status", [
   "cancelado",
   "ausente",
 ]);
+
+export const paymentMethod = pgEnum("payment_method", [
+  "efectivo",
+  "transferencia",
+  "mercado_pago",
+  "tarjeta",
+  "otro",
+]);
+export const expenseCategory = pgEnum("expense_category", ["alquiler", "insumos", "monotributo", "otros"]);
 
 export const notificationChannel = pgEnum("notification_channel", ["email", "whatsapp"]);
 export const notificationRecipient = pgEnum("notification_recipient", ["cliente", "profesional"]);
@@ -97,6 +107,8 @@ export const professionals = pgTable(
     /** Horas antes del turno en que se manda el recordatorio al cliente; 0 = sin recordatorio. */
     reminderHoursBefore: integer("reminder_hours_before").notNull().default(24),
     published: boolean("published").notNull().default(false),
+    /** Tope anual de ingresos de su categoría de monotributo, cargado por el profesional. */
+    incomeCapCents: bigint("income_cap_cents", { mode: "number" }),
     ...timestamps,
   },
   (t) => [index("professionals_organization_idx").on(t.organizationId)],
@@ -203,9 +215,29 @@ export const bookings = pgTable(
       .unique()
       .$defaultFn(() => randomBytes(24).toString("hex")),
     cancelledAt: timestamp("cancelled_at", { withTimezone: true }),
+    /** Cobro registrado a mano por el profesional; la plataforma no cobra por él. */
+    paidAt: timestamp("paid_at", { withTimezone: true }),
+    paymentMethod: paymentMethod("payment_method"),
     ...timestamps,
   },
   (t) => [index("bookings_professional_starts_idx").on(t.professionalId, t.startsAt)],
+);
+
+/** Gastos que el profesional carga a mano para ver su resultado del mes. */
+export const expenses = pgTable(
+  "expenses",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    professionalId: uuid("professional_id")
+      .notNull()
+      .references(() => professionals.id, { onDelete: "cascade" }),
+    date: date("date").notNull(),
+    category: expenseCategory("category").notNull(),
+    description: text("description"),
+    amountCents: bigint("amount_cents", { mode: "number" }).notNull(),
+    ...timestamps,
+  },
+  (t) => [index("expenses_professional_date_idx").on(t.professionalId, t.date)],
 );
 
 /**
@@ -241,3 +273,4 @@ export type Professional = typeof professionals.$inferSelect;
 export type Service = typeof services.$inferSelect;
 export type Booking = typeof bookings.$inferSelect;
 export type Notification = typeof notifications.$inferSelect;
+export type Expense = typeof expenses.$inferSelect;

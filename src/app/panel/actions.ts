@@ -29,7 +29,12 @@ export async function setBookingStatusAction(formData: FormData) {
 
   const updated = await db
     .update(schema.bookings)
-    .set({ status, cancelledAt: status === "cancelado" ? new Date() : null })
+    .set({
+      status,
+      cancelledAt: status === "cancelado" ? new Date() : null,
+      // Solo un turno realizado puede quedar cobrado.
+      ...(status === "realizado" ? {} : { paidAt: null, paymentMethod: null }),
+    })
     .where(
       and(
         eq(schema.bookings.id, id),
@@ -42,7 +47,25 @@ export async function setBookingStatusAction(formData: FormData) {
   if (updated.length > 0 && status === "confirmado") await notifyBookingEvent(id, "confirmado");
   if (updated.length > 0 && status === "cancelado") await notifyBookingEvent(id, "cancelado_por_profesional");
   revalidatePath("/panel");
+  revalidatePath("/panel/resumen");
   revalidatePublic(pro.slug);
+}
+
+const paymentMethodSchema = z.enum(["efectivo", "transferencia", "mercado_pago", "tarjeta", "otro"]);
+
+/** Marca un turno realizado como cobrado con su medio de pago, o lo vuelve a "sin cobrar". */
+export async function setPaidAction(formData: FormData) {
+  const pro = await requireProfessional();
+  const id = z.uuid().parse(formData.get("bookingId"));
+  const raw = formData.get("paymentMethod");
+  const method = raw ? paymentMethodSchema.parse(raw) : null;
+  await db
+    .update(schema.bookings)
+    .set({ paidAt: method ? new Date() : null, paymentMethod: method })
+    .where(
+      and(eq(schema.bookings.id, id), eq(schema.bookings.professionalId, pro.id), eq(schema.bookings.status, "realizado")),
+    );
+  revalidatePath("/panel/resumen");
 }
 
 // --- Servicios ------------------------------------------------------------
@@ -183,6 +206,52 @@ export async function deleteExceptionAction(formData: FormData) {
     .where(and(eq(schema.availabilityExceptions.id, id), eq(schema.availabilityExceptions.professionalId, pro.id)));
   revalidatePath("/panel/horarios");
   revalidatePublic(pro.slug);
+}
+
+// --- Gastos ---------------------------------------------------------------
+
+const expenseSchema = z.object({
+  date: z.iso.date("Elegí la fecha del gasto"),
+  category: z.enum(["alquiler", "insumos", "monotributo", "otros"], "Elegí una categoría"),
+  description: z.string().trim().max(200).optional(),
+  amount: z.string(),
+});
+
+export async function addExpenseAction(_prev: FormState, formData: FormData): Promise<FormState> {
+  const pro = await requireProfessional();
+  const parsed = expenseSchema.safeParse(Object.fromEntries(formData));
+  if (!parsed.success) return { error: parsed.error.issues[0].message };
+  const amountCents = parsePriceToCents(parsed.data.amount);
+  if (!amountCents) return { error: "Ingresá el monto en pesos, por ejemplo 15000" };
+
+  await db.insert(schema.expenses).values({
+    professionalId: pro.id,
+    date: parsed.data.date,
+    category: parsed.data.category,
+    description: parsed.data.description || null,
+    amountCents,
+  });
+  revalidatePath("/panel/resumen");
+  return { ok: "Gasto cargado" };
+}
+
+export async function deleteExpenseAction(formData: FormData) {
+  const pro = await requireProfessional();
+  const id = z.uuid().parse(formData.get("expenseId"));
+  await db
+    .delete(schema.expenses)
+    .where(and(eq(schema.expenses.id, id), eq(schema.expenses.professionalId, pro.id)));
+  revalidatePath("/panel/resumen");
+}
+
+export async function saveIncomeCapAction(_prev: FormState, formData: FormData): Promise<FormState> {
+  const pro = await requireProfessional();
+  const raw = String(formData.get("incomeCap") ?? "").trim();
+  const incomeCapCents = raw === "" ? null : parsePriceToCents(raw);
+  if (raw !== "" && !incomeCapCents) return { error: "Ingresá el tope en pesos, por ejemplo 10000000" };
+  await db.update(schema.professionals).set({ incomeCapCents }).where(eq(schema.professionals.id, pro.id));
+  revalidatePath("/panel/resumen");
+  return { ok: incomeCapCents ? "Tope guardado" : "Tope borrado" };
 }
 
 // --- Perfil ---------------------------------------------------------------
