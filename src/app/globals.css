@@ -1,29 +1,29 @@
 @import "tailwindcss";
 
 :root {
-  --background: #f6f4ef;
+  --background: #fbfaf7;
   --surface: #ffffff;
-  --foreground: #1b2440;
-  --muted: #4a5068;
-  --border: #e0dcd2;
-  --brand: #2340a8;
-  --brand-strong: #1a3088;
-  --brand-soft: #e3e8f7;
-  --ink: #1b2440;
+  --foreground: #0b1633;
+  --muted: #4f5874;
+  --border: #e6e3dc;
+  --brand: #3b63ff;
+  --brand-strong: #2447e0;
+  --brand-soft: #e6ecff;
+  --ink: #0b1633;
   --danger: #b42318;
 }
 
 @media (prefers-color-scheme: dark) {
   :root {
-    --background: #10141f;
-    --surface: #181e2d;
-    --foreground: #ebeef5;
-    --muted: #a5adc2;
-    --border: #2b3347;
-    --brand: #4f6bd8;
-    --brand-strong: #6f88e6;
-    --brand-soft: #1d2647;
-    --ink: #0b0f1a;
+    --background: #0d1220;
+    --surface: #151c2e;
+    --foreground: #eceff7;
+    --muted: #a6aec6;
+    --border: #283149;
+    --brand: #6d8bff;
+    --brand-strong: #8ea5ff;
+    --brand-soft: #1b2650;
+    --ink: #070b16;
     --danger: #f97066;
   }
 }
@@ -39,8 +39,16 @@
   --color-brand-soft: var(--brand-soft);
   --color-danger: var(--danger);
   --color-ink: var(--ink);
-  --font-sans: var(--font-public-sans);
-  --font-serif: var(--font-source-serif);
+  --font-sans: var(--font-figtree);
+  --font-display: var(--font-archivo);
+}
+
+/* Archivo un poco angosto en los títulos: más firme y ocupa menos ancho. En la capa base
+   para que una clase como [font-stretch:78%] pueda pisarlo. */
+@layer base {
+  .font-display {
+    font-stretch: 88%;
+  }
 }
 
 body {
@@ -105,6 +113,12 @@ html {
   }
 }
 
+@keyframes acerca {
+  from {
+    transform: scale(1.08);
+  }
+}
+
 @keyframes cinta {
   to {
     transform: translateX(-50%);
@@ -149,6 +163,11 @@ html {
   animation: flota 6s ease-in-out infinite;
 }
 
+/* La foto del inicio se acerca despacio al cargar. */
+.anim-acerca {
+  animation: acerca 14s ease-out both;
+}
+
 .cinta {
   animation: cinta 45s linear infinite;
 }
@@ -172,6 +191,11 @@ html {
   .revelar[data-visible] {
     opacity: 1;
     transform: none;
+  }
+
+  /* Las animaciones dentro de un bloque que todavía no se vio esperan a que llegue el scroll. */
+  .revelar:not([data-visible]) :is(.anim-entra, .anim-sale, .anim-despliega, .anim-llena, .anim-burbuja) {
+    animation-play-state: paused;
   }
 
   .revelar .al-ver-llena {
@@ -218,6 +242,7 @@ html {
   .anim-llena,
   .anim-burbuja,
   .anim-flota,
+  .anim-acerca,
   .cinta {
     animation: none;
   }

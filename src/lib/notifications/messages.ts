@@ -128,9 +128,9 @@ const escapeHtml = (s: string) =>
 /** HTML simple para el email, con los links clickeables. */
 export function textToHtml(text: string): string {
   const paragraphs = text.split("\n\n").map((p) => {
-    const linked = escapeHtml(p).replace(/(https?:\/\/[^\s<]+)/g, '<a href="$1" style="color:#2340a8">$1</a>');
+    const linked = escapeHtml(p).replace(/(https?:\/\/[^\s<]+)/g, '<a href="$1" style="color:#3b63ff">$1</a>');
     return `<p style="margin:0 0 16px">${linked}</p>`;
   });
   return `<div style="font-family:Arial,sans-serif;font-size:15px;line-height:1.5;color:#1c1d1f;max-width:520px">
-<p style="margin:0 0 20px;font-weight:bold;color:#2340a8">ORGATODO</p>${paragraphs.join("")}</div>`;
+<p style="margin:0 0 20px;font-weight:bold;color:#3b63ff">ORGATODO</p>${paragraphs.join("")}</div>`;
 }
