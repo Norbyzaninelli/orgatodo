@@ -16,11 +16,11 @@ export function AgendaAnimada() {
       />
 
       <div
-        className="anim-entra rounded-[1.75rem] border border-border bg-surface p-5 shadow-[0_40px_80px_-40px_rgba(27,36,64,0.45)] sm:p-6"
+        className="anim-entra rounded-[1.75rem] border border-border bg-surface p-5 shadow-[0_40px_80px_-40px_rgba(11,22,51,0.45)] sm:p-6"
         style={d(0)}
       >
         <div className="flex items-baseline justify-between gap-4 px-1 pb-4">
-          <p className="font-serif text-xl font-semibold">Lunes 13 de octubre</p>
+          <p className="font-display text-xl font-semibold">Lunes 13 de octubre</p>
           <p className="text-sm text-muted">3 turnos</p>
         </div>
 
@@ -105,7 +105,7 @@ export function AgendaAnimada() {
 /** El recordatorio que le llega al cliente, en un celular chico. */
 export function ChatWhatsApp({ delay = 0 }: { delay?: number }) {
   return (
-    <div className="rounded-[2rem] border-[6px] border-ink bg-ink shadow-[0_30px_60px_-25px_rgba(27,36,64,0.6)]">
+    <div className="rounded-[2rem] border-[6px] border-ink bg-ink shadow-[0_30px_60px_-25px_rgba(11,22,51,0.6)]">
       <div className="overflow-hidden rounded-[1.5rem] bg-[#ece5dd]">
         <div className="flex items-center gap-2 bg-[#1f5f4a] px-3 py-2.5 text-white">
           <span className="flex h-7 w-7 items-center justify-center rounded-full bg-white/20">
@@ -116,7 +116,7 @@ export function ChatWhatsApp({ delay = 0 }: { delay?: number }) {
             <span className="opacity-80">vía Orgatodo</span>
           </span>
         </div>
-        <div className="space-y-2 px-2.5 py-3 text-[0.7rem] leading-snug text-[#1b2440]">
+        <div className="space-y-2 px-2.5 py-3 text-[0.7rem] leading-snug text-[#0b1633]">
           <p className="anim-burbuja max-w-[92%] rounded-lg rounded-tl-none bg-white px-2.5 py-2 shadow-sm" style={d(delay)}>
             Hola Paula, te recordamos tu turno de mañana a las 16:30 con Lucía Fernández.
             <span className="mt-1 block text-right text-[0.6rem] text-[#6b7280]">10:02</span>

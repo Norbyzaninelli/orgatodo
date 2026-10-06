@@ -5,18 +5,18 @@ import type { CSSProperties } from "react";
 export function CelularReserva() {
   const slots = ["09:00", "09:45", "11:15", "14:00", "16:30", "17:15"];
   return (
-    <div className="mx-auto w-full max-w-[15rem] rounded-[2.25rem] border-[7px] border-ink bg-ink shadow-[0_30px_60px_-30px_rgba(27,36,64,0.6)]">
+    <div className="mx-auto w-full max-w-[15rem] rounded-[2.25rem] border-[7px] border-ink bg-ink shadow-[0_30px_60px_-30px_rgba(11,22,51,0.6)]">
       <div className="overflow-hidden rounded-[1.75rem] bg-background text-[0.7rem] text-foreground">
         <div className="flex justify-center py-2">
           <span className="h-1.5 w-14 rounded-full bg-ink/80" />
         </div>
         <div className="space-y-3 px-4 pb-5">
           <div className="flex items-center gap-2.5">
-            <span className="flex h-9 w-9 items-center justify-center rounded-full bg-brand-soft font-serif text-sm font-semibold text-brand">
+            <span className="flex h-9 w-9 items-center justify-center rounded-full bg-brand-soft font-display text-sm font-semibold text-brand">
               LF
             </span>
             <span className="leading-tight">
-              <span className="block font-serif text-sm font-semibold">Lucía Fernández</span>
+              <span className="block font-display text-sm font-semibold">Lucía Fernández</span>
               <span className="text-muted">Kinesióloga, Palermo</span>
             </span>
           </div>
@@ -57,13 +57,13 @@ export function CelularReserva() {
 
 export function HojaFactura() {
   return (
-    <div className="mx-auto w-full max-w-xs rotate-[-1.5deg] rounded-lg bg-white p-5 text-[0.7rem] text-[#1b2440] shadow-[0_30px_60px_-30px_rgba(27,36,64,0.55)]">
+    <div className="mx-auto w-full max-w-xs rotate-[-1.5deg] rounded-lg bg-white p-5 text-[0.7rem] text-[#0b1633] shadow-[0_30px_60px_-30px_rgba(11,22,51,0.55)]">
       <div className="grid grid-cols-[1fr_auto_1fr] items-start gap-2 border-b border-[#e0dcd2] pb-3">
         <span className="leading-snug">
           <span className="block text-xs font-semibold">Lucía Fernández</span>
           <span className="text-[#4a5068]">Monotributo</span>
         </span>
-        <span className="flex h-9 w-9 items-center justify-center border-2 border-[#1b2440] text-lg font-bold">C</span>
+        <span className="flex h-9 w-9 items-center justify-center border-2 border-[#0b1633] text-lg font-bold">C</span>
         <span className="text-right leading-snug">
           <span className="block text-xs font-semibold">Factura</span>
           <span className="text-[#4a5068] tabular-nums">00002-00000148</span>
@@ -87,7 +87,7 @@ export function HojaFactura() {
         <span className="space-y-0.5 leading-snug text-[#4a5068]">
           <span className="block tabular-nums">CAE 76412398550127</span>
           <span className="block">Vto. 23/10/2026</span>
-          <span className="mt-1 inline-block rounded-full bg-[#e3e8f7] px-2 py-0.5 font-semibold text-[#2340a8]">
+          <span className="mt-1 inline-block rounded-full bg-[#e6ecff] px-2 py-0.5 font-semibold text-[#3b63ff]">
             Autorizada por ARCA
           </span>
         </span>
@@ -103,7 +103,7 @@ function CodigoQr() {
   return (
     <svg viewBox="0 0 9 9" className="h-14 w-14 shrink-0" aria-hidden="true">
       {celdas.slice(0, 81).map((c, i) =>
-        c === "1" ? <rect key={i} x={i % 9} y={Math.floor(i / 9)} width="1" height="1" fill="#1b2440" /> : null,
+        c === "1" ? <rect key={i} x={i % 9} y={Math.floor(i / 9)} width="1" height="1" fill="#0b1633" /> : null,
       )}
       {[
         [0, 0],
@@ -111,9 +111,9 @@ function CodigoQr() {
         [0, 6],
       ].map(([x, y]) => (
         <g key={`${x}-${y}`}>
-          <rect x={x} y={y} width="3" height="3" fill="#1b2440" />
+          <rect x={x} y={y} width="3" height="3" fill="#0b1633" />
           <rect x={x + 0.5} y={y + 0.5} width="2" height="2" fill="#fff" />
-          <rect x={x + 1} y={y + 1} width="1" height="1" fill="#1b2440" />
+          <rect x={x + 1} y={y + 1} width="1" height="1" fill="#0b1633" />
         </g>
       ))}
     </svg>
@@ -138,9 +138,9 @@ const MESES = [
 
 export function ResumenAnual() {
   return (
-    <div className="mx-auto w-full max-w-sm rounded-2xl border border-border bg-surface p-5 text-sm shadow-[0_30px_60px_-30px_rgba(27,36,64,0.45)]">
+    <div className="mx-auto w-full max-w-sm rounded-2xl border border-border bg-surface p-5 text-sm shadow-[0_30px_60px_-30px_rgba(11,22,51,0.45)]">
       <div className="flex items-baseline justify-between">
-        <p className="font-serif text-base font-semibold">Ingresos por mes</p>
+        <p className="font-display text-base font-semibold">Ingresos por mes</p>
         <p className="text-xs text-muted">Ejemplo</p>
       </div>
       <div className="mt-4 flex h-32 items-end gap-1.5">

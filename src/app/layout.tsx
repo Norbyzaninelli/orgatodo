@@ -1,10 +1,11 @@
 import type { Metadata, Viewport } from "next";
-import { Public_Sans, Source_Serif_4 } from "next/font/google";
+import { Archivo, Figtree } from "next/font/google";
 import Link from "next/link";
 import "./globals.css";
 
-const publicSans = Public_Sans({ variable: "--font-public-sans", subsets: ["latin"] });
-const sourceSerif = Source_Serif_4({ variable: "--font-source-serif", subsets: ["latin"] });
+const figtree = Figtree({ variable: "--font-figtree", subsets: ["latin"] });
+// Archivo con su eje de ancho, para poder angostar los títulos.
+const archivo = Archivo({ variable: "--font-archivo", subsets: ["latin"], axes: ["wdth"] });
 
 export const metadata: Metadata = {
   title: { default: "ORGATODO", template: "%s · ORGATODO" },
@@ -12,15 +13,15 @@ export const metadata: Metadata = {
   appleWebApp: { capable: true, title: "ORGATODO", statusBarStyle: "default" },
 };
 
-export const viewport: Viewport = { themeColor: "#1b2440" };
+export const viewport: Viewport = { themeColor: "#0b1633" };
 
 export default function RootLayout({ children }: LayoutProps<"/">) {
   return (
-    <html lang="es-AR" className={`${publicSans.variable} ${sourceSerif.variable} h-full antialiased`}>
+    <html lang="es-AR" className={`${figtree.variable} ${archivo.variable} h-full antialiased`}>
       <body className="flex min-h-full flex-col font-sans">
         <header className="border-b border-border bg-surface print:hidden">
           <div className="mx-auto flex h-14 max-w-6xl items-center justify-between px-4 sm:px-6">
-            <Link href="/" className="flex items-center gap-2 font-serif text-xl font-semibold">
+            <Link href="/" className="flex items-center gap-2 font-display text-xl font-bold">
               <LogoMark />
               Orgatodo
             </Link>
