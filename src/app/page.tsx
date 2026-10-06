@@ -1,3 +1,4 @@
+import Image from "next/image";
 import Link from "next/link";
 import type { ReactNode } from "react";
 import { SearchForm } from "@/components/search-form";
@@ -26,6 +27,16 @@ const RECORRIDO = [
   ["Mirás tus números", "Ingresos, gastos y cuánto facturaste contra el tope de tu categoría."],
 ] as const;
 
+// Fotos de Unsplash (licencia Unsplash), guardadas en public/fotos. Ver public/fotos/CREDITOS.md.
+const FOTOS_RUBROS = [
+  ["peluqueria", "Peluquería", "/fotos/peluqueria.jpg", "Peluquera secando el pelo de una clienta"],
+  ["kinesiologia", "Kinesiología", "/fotos/kinesiologia.jpg", "Kinesiólogo revisando la rodilla de un paciente"],
+  ["psicologia", "Psicología", "/fotos/psicologia.jpg", "Psicóloga conversando con una paciente en su consultorio"],
+  ["barberia", "Barbería", "/fotos/barberia.jpg", "Barbero cortando el pelo con máquina"],
+  ["nutricion", "Nutrición", "/fotos/nutricion.jpg", "Nutricionista en su escritorio con frutas y verduras"],
+  ["unas", "Uñas", "/fotos/unas.jpg", "Manicura trabajando en las uñas de una clienta"],
+] as const;
+
 const RUBROS_CINTA = RUBROS.filter((r) => r.key !== "otros");
 
 /** Las secciones de color ocupan todo el ancho aunque el layout centre el contenido. */
@@ -34,7 +45,12 @@ const fullBleed = "mx-[calc(50%-50vw)]";
 export default function Home() {
   return (
     <div className="-mt-8 -mb-8">
-      <section className="grid items-center gap-14 py-14 sm:py-20 lg:grid-cols-[minmax(0,1fr)_minmax(0,1fr)] lg:gap-16 xl:pb-48">
+      <section className="relative isolate grid items-center gap-14 py-14 sm:py-20 lg:grid-cols-[minmax(0,1fr)_minmax(0,1fr)] lg:gap-16 xl:pb-48">
+        {/* Fondo de hoja de agenda: renglones finos que se desvanecen hacia abajo. */}
+        <div
+          aria-hidden="true"
+          className="absolute inset-y-0 left-1/2 -z-10 w-screen -translate-x-1/2 bg-[linear-gradient(var(--border)_1px,transparent_1px)] [background-size:100%_44px] [mask-image:linear-gradient(to_bottom,black,transparent_85%)] opacity-70"
+        />
         <div className="space-y-7">
           <h1
             className="anim-entra max-w-[14ch] font-serif text-[2.75rem] leading-[1.04] font-semibold tracking-tight sm:text-[4rem]"
@@ -62,7 +78,25 @@ export default function Home() {
           </div>
         </div>
 
-        <AgendaAnimada />
+        <div className="relative mx-auto w-full max-w-lg lg:mr-0 lg:max-w-none">
+          <div
+            className="anim-entra relative ml-auto aspect-[4/3] w-[88%] overflow-hidden rounded-[2rem] bg-brand-soft shadow-[0_40px_80px_-50px_rgba(27,36,64,0.6)] sm:aspect-[5/4] lg:aspect-[4/5] lg:w-[78%]"
+            style={d(0)}
+          >
+            <Image
+              src="/fotos/profesional.jpg"
+              alt="Profesional confirmando un turno por teléfono frente a su computadora"
+              fill
+              sizes="(min-width: 1024px) 440px, 90vw"
+              loading="eager"
+              fetchPriority="high"
+              className="object-cover object-[36%_center]"
+            />
+          </div>
+          <div className="relative -mt-20 sm:-mt-32 lg:-mt-60 lg:mr-14">
+            <AgendaAnimada />
+          </div>
+        </div>
       </section>
 
       <section aria-label="Rubros" className={`${fullBleed} overflow-hidden border-y border-border bg-surface py-5`}>
@@ -84,6 +118,45 @@ export default function Home() {
             </ul>
           ))}
         </div>
+      </section>
+
+      <section className="space-y-10 pt-20 sm:pt-28">
+        <Revelar className="flex flex-wrap items-end justify-between gap-6">
+          <div className="max-w-2xl space-y-3">
+            <h2 className="font-serif text-3xl font-semibold tracking-tight sm:text-[2.6rem]">
+              Para quienes trabajan con turnos
+            </h2>
+            <p className="text-lg text-muted">
+              Consultorios, salones y gabinetes que quieren la agenda, los cobros y el monotributo en un solo lugar.
+            </p>
+          </div>
+          <Link href="/buscar" className="font-medium text-brand underline-offset-4 hover:underline">
+            Ver todos los rubros
+          </Link>
+        </Revelar>
+        <Revelar as="ul" className="grid grid-cols-2 gap-3 sm:grid-cols-3 sm:gap-4 lg:grid-cols-6">
+          {FOTOS_RUBROS.map(([key, label, src, alt]) => (
+            <li key={key}>
+              <Link
+                href={`/buscar?rubro=${key}`}
+                className="group relative block aspect-[4/5] overflow-hidden rounded-3xl bg-brand-soft"
+              >
+                <Image
+                  src={src}
+                  alt={alt}
+                  fill
+                  sizes="(min-width: 1024px) 180px, (min-width: 640px) 33vw, 50vw"
+                  className="object-cover transition duration-700 ease-out group-hover:scale-105"
+                />
+                <span
+                  aria-hidden="true"
+                  className="absolute inset-0 bg-gradient-to-t from-[#1b2440]/85 via-[#1b2440]/10 to-transparent"
+                />
+                <span className="absolute inset-x-4 bottom-4 font-serif text-lg font-semibold text-white">{label}</span>
+              </Link>
+            </li>
+          ))}
+        </Revelar>
       </section>
 
       <section id="como-funciona" className="scroll-mt-8 space-y-20 py-20 sm:space-y-28 sm:py-28">
@@ -146,24 +219,48 @@ export default function Home() {
         </Revelar>
       </section>
 
-      <section className="grid gap-10 border-t border-border py-16 md:grid-cols-2">
-        <Revelar className="space-y-2">
-          <h3 className="font-serif text-2xl font-semibold">¿Trabajás en un centro?</h3>
-          <p className="max-w-[50ch] leading-relaxed text-muted">
-            Sumá a tu equipo con un link. Cada profesional factura con su propio CUIT y quien administra ve la agenda de
-            todos en una sola pantalla.
-          </p>
+      <section className="grid items-center gap-10 border-t border-border py-16 md:grid-cols-2 md:gap-16">
+        <Revelar className="relative aspect-[4/3] overflow-hidden rounded-[2rem] bg-brand-soft">
+          <Image
+            src="/fotos/centro.jpg"
+            alt="Centro con varios puestos de trabajo y la administradora en la recepción"
+            fill
+            sizes="(min-width: 768px) 50vw, 100vw"
+            className="object-cover"
+          />
+          {/* La foto es en blanco y negro: un velo azul la lleva a los colores de la marca. */}
+          <span aria-hidden="true" className="absolute inset-0 bg-brand/25 mix-blend-multiply" />
         </Revelar>
-        <Revelar className="space-y-2" delay={120}>
-          <h3 className="font-serif text-2xl font-semibold">Los cobros siguen siendo tuyos</h3>
-          <p className="max-w-[50ch] leading-relaxed text-muted">
-            Orgatodo no cobra en tu nombre ni retiene dinero. Tus clientes te pagan a vos, como siempre.
-          </p>
-        </Revelar>
+        <div className="space-y-10">
+          <Revelar className="space-y-2">
+            <h3 className="font-serif text-2xl font-semibold">¿Trabajás en un centro?</h3>
+            <p className="max-w-[50ch] leading-relaxed text-muted">
+              Sumá a tu equipo con un link. Cada profesional factura con su propio CUIT y quien administra ve la agenda
+              de todos en una sola pantalla.
+            </p>
+          </Revelar>
+          <Revelar className="space-y-2" delay={120}>
+            <h3 className="font-serif text-2xl font-semibold">Los cobros siguen siendo tuyos</h3>
+            <p className="max-w-[50ch] leading-relaxed text-muted">
+              Orgatodo no cobra en tu nombre ni retiene dinero. Tus clientes te pagan a vos, como siempre.
+            </p>
+          </Revelar>
+        </div>
       </section>
 
-      <section className={`${fullBleed} bg-ink text-white`}>
-        <Revelar className="mx-auto max-w-6xl space-y-6 px-4 py-20 sm:px-6">
+      <section className={`${fullBleed} relative isolate overflow-hidden bg-ink text-white`}>
+        <Image
+          src="/fotos/buenos-aires.jpg"
+          alt=""
+          fill
+          sizes="100vw"
+          className="-z-10 object-cover object-[center_60%]"
+        />
+        <span
+          aria-hidden="true"
+          className="absolute inset-0 -z-10 bg-[linear-gradient(100deg,#1b2440_30%,rgba(27,36,64,0.82)_60%,rgba(27,36,64,0.55))]"
+        />
+        <Revelar className="mx-auto max-w-6xl space-y-6 px-4 py-24 sm:px-6 sm:py-28">
           <div className="space-y-2">
             <h2 className="font-serif text-3xl font-semibold tracking-tight sm:text-4xl">¿Buscás turno?</h2>
             <p className="text-lg text-[#d3d9ec]">Buscá por servicio y zona, elegí un horario libre y listo.</p>
