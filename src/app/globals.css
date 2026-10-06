@@ -1,27 +1,29 @@
 @import "tailwindcss";
 
 :root {
-  --background: #f7f7f4;
+  --background: #f6f4ef;
   --surface: #ffffff;
-  --foreground: #1c1d1f;
-  --muted: #6b6f76;
-  --border: #e4e4df;
-  --brand: #0f766e;
-  --brand-strong: #0b5f58;
-  --brand-soft: #e3f2ef;
+  --foreground: #1b2440;
+  --muted: #4a5068;
+  --border: #e0dcd2;
+  --brand: #2340a8;
+  --brand-strong: #1a3088;
+  --brand-soft: #e3e8f7;
+  --ink: #1b2440;
   --danger: #b42318;
 }
 
 @media (prefers-color-scheme: dark) {
   :root {
-    --background: #111312;
-    --surface: #1a1d1c;
-    --foreground: #ecedea;
-    --muted: #9ba19e;
-    --border: #2c302e;
-    --brand: #2dd4bf;
-    --brand-strong: #5eead4;
-    --brand-soft: #123532;
+    --background: #10141f;
+    --surface: #181e2d;
+    --foreground: #ebeef5;
+    --muted: #a5adc2;
+    --border: #2b3347;
+    --brand: #4f6bd8;
+    --brand-strong: #6f88e6;
+    --brand-soft: #1d2647;
+    --ink: #0b0f1a;
     --danger: #f97066;
   }
 }
@@ -36,10 +38,48 @@
   --color-brand-strong: var(--brand-strong);
   --color-brand-soft: var(--brand-soft);
   --color-danger: var(--danger);
-  --font-sans: var(--font-geist-sans);
+  --color-ink: var(--ink);
+  --font-sans: var(--font-public-sans);
+  --font-serif: var(--font-source-serif);
 }
 
 body {
   background: var(--background);
   color: var(--foreground);
+  overflow-x: clip;
+}
+
+:focus-visible {
+  outline: 2px solid var(--brand);
+  outline-offset: 2px;
+}
+
+/* Inicio: la factura del turno aparece una sola vez, al cargar. */
+@keyframes factura-aparece {
+  from {
+    opacity: 0;
+    transform: translateY(-6px);
+  }
+}
+
+@keyframes medidor-llena {
+  from {
+    transform: scaleX(0);
+  }
+}
+
+.factura-aparece {
+  animation: factura-aparece 600ms cubic-bezier(0.2, 0.7, 0.2, 1) 500ms both;
+}
+
+.medidor-llena {
+  transform-origin: left;
+  animation: medidor-llena 800ms ease-out 900ms both;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .factura-aparece,
+  .medidor-llena {
+    animation: none;
+  }
 }
