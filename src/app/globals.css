@@ -54,32 +54,184 @@ body {
   outline-offset: 2px;
 }
 
-/* Inicio: la factura del turno aparece una sola vez, al cargar. */
-@keyframes factura-aparece {
+html {
+  scroll-behavior: smooth;
+}
+
+/* ---- Inicio ---- */
+
+/* La agenda del inicio se arma sola una vez: entran los turnos, el primero se
+   realiza y se factura, sale el recordatorio por WhatsApp y se llena el medidor. */
+@keyframes entra {
   from {
     opacity: 0;
-    transform: translateY(-6px);
+    transform: translateY(14px);
   }
 }
 
-@keyframes medidor-llena {
+@keyframes sale {
+  to {
+    opacity: 0;
+  }
+}
+
+@keyframes despliega {
+  from {
+    grid-template-rows: 0fr;
+    opacity: 0;
+  }
+  to {
+    grid-template-rows: 1fr;
+    opacity: 1;
+  }
+}
+
+@keyframes llena {
   from {
     transform: scaleX(0);
   }
 }
 
-.factura-aparece {
-  animation: factura-aparece 600ms cubic-bezier(0.2, 0.7, 0.2, 1) 500ms both;
+@keyframes burbuja {
+  from {
+    opacity: 0;
+    transform: translateY(10px) scale(0.92);
+  }
 }
 
-.medidor-llena {
+@keyframes flota {
+  50% {
+    transform: translateY(-8px);
+  }
+}
+
+@keyframes cinta {
+  to {
+    transform: translateX(-50%);
+  }
+}
+
+@keyframes crece {
+  from {
+    transform: scaleY(0);
+  }
+}
+
+.anim-entra {
+  animation: entra 700ms cubic-bezier(0.2, 0.7, 0.2, 1) both;
+  animation-delay: var(--d, 0ms);
+}
+
+.anim-sale {
+  animation: sale 300ms ease-in both;
+  animation-delay: var(--d, 0ms);
+}
+
+.anim-despliega {
+  display: grid;
+  animation: despliega 600ms cubic-bezier(0.2, 0.7, 0.2, 1) both;
+  animation-delay: var(--d, 0ms);
+}
+
+.anim-llena {
   transform-origin: left;
-  animation: medidor-llena 800ms ease-out 900ms both;
+  animation: llena 1100ms cubic-bezier(0.3, 0.7, 0.2, 1) both;
+  animation-delay: var(--d, 0ms);
+}
+
+.anim-burbuja {
+  transform-origin: bottom left;
+  animation: burbuja 500ms cubic-bezier(0.3, 1.4, 0.5, 1) both;
+  animation-delay: var(--d, 0ms);
+}
+
+.anim-flota {
+  animation: flota 6s ease-in-out infinite;
+}
+
+.cinta {
+  animation: cinta 45s linear infinite;
+}
+
+.cinta:hover,
+.cinta:focus-within {
+  animation-play-state: paused;
+}
+
+/* Aparece al llegar con el scroll. Sin JavaScript se ve todo de una. */
+@media (scripting: enabled) {
+  .revelar {
+    opacity: 0;
+    transform: translateY(28px);
+    transition:
+      opacity 700ms ease-out,
+      transform 700ms cubic-bezier(0.2, 0.7, 0.2, 1);
+    transition-delay: var(--d, 0ms);
+  }
+
+  .revelar[data-visible] {
+    opacity: 1;
+    transform: none;
+  }
+
+  .revelar .al-ver-llena {
+    transform: scaleX(0);
+    transform-origin: left;
+    transition: transform 1400ms cubic-bezier(0.3, 0.7, 0.2, 1) 300ms;
+  }
+
+  .revelar[data-visible] .al-ver-llena {
+    transform: none;
+  }
+
+  .revelar .al-ver-crece {
+    transform: scaleY(0);
+    transform-origin: bottom;
+    transition: transform 800ms cubic-bezier(0.3, 0.7, 0.2, 1);
+    transition-delay: var(--b, 0ms);
+  }
+
+  .revelar[data-visible] .al-ver-crece {
+    transform: none;
+  }
+}
+
+.levanta {
+  transition:
+    transform 300ms cubic-bezier(0.2, 0.7, 0.2, 1),
+    box-shadow 300ms ease;
+}
+
+.levanta:hover {
+  transform: translateY(-6px);
+  box-shadow: 0 28px 50px -28px rgba(27, 36, 64, 0.45);
 }
 
 @media (prefers-reduced-motion: reduce) {
-  .factura-aparece,
-  .medidor-llena {
+  html {
+    scroll-behavior: auto;
+  }
+
+  .anim-entra,
+  .anim-sale,
+  .anim-despliega,
+  .anim-llena,
+  .anim-burbuja,
+  .anim-flota,
+  .cinta {
     animation: none;
+  }
+
+  .anim-sale {
+    display: none;
+  }
+
+  .revelar,
+  .revelar .al-ver-llena,
+  .revelar .al-ver-crece,
+  .levanta {
+    transition: none !important;
+    opacity: 1 !important;
+    transform: none !important;
   }
 }
