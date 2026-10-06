@@ -4,7 +4,9 @@ import { redirect } from "next/navigation";
 import { revalidatePath } from "next/cache";
 import { z } from "zod";
 import { BookingError, bookingRequestSchema, cancelBookingByToken, createBooking } from "@/lib/agenda/booking";
+import type { FormState } from "@/lib/form-state";
 import { notifyBookingEvent } from "@/lib/notifications";
+import { ReviewError, reviewSchema, submitReview } from "@/lib/resenas";
 
 export interface BookingFormState {
   error?: string;
@@ -40,4 +42,17 @@ export async function cancelAction(formData: FormData) {
   const cancelledId = await cancelBookingByToken(token);
   if (cancelledId) await notifyBookingEvent(cancelledId, "cancelado_por_cliente");
   revalidatePath(`/turno/${token}`);
+}
+
+export async function submitReviewAction(_prev: FormState, formData: FormData): Promise<FormState> {
+  const parsed = reviewSchema.safeParse(Object.fromEntries(formData));
+  if (!parsed.success) return { error: parsed.error.issues[0].message };
+  try {
+    await submitReview(parsed.data);
+  } catch (error) {
+    if (error instanceof ReviewError) return { error: error.message };
+    throw error;
+  }
+  revalidatePath("/", "layout");
+  redirect(`/turno/${parsed.data.token}`);
 }

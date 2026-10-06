@@ -57,6 +57,13 @@
       "when": 1791226621349,
       "tag": "0007_buscador",
       "breakpoints": true
+    },
+    {
+      "idx": 8,
+      "version": "7",
+      "when": 1791237078911,
+      "tag": "0008_turnos_a_mano_y_resenas",
+      "breakpoints": true
     }
   ]
 }

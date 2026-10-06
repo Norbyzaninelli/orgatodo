@@ -105,6 +105,17 @@ const builders: Record<Kind, (c: MessageContext) => Message> = {
       params: [c.clientName, c.professionalName, c.serviceName, c.dateText, c.timeText],
     },
   }),
+  pedido_resena: (c) => ({
+    subject: `¿Cómo te fue con ${c.professionalName}?`,
+    text: [
+      `Hola ${c.clientName}, gracias por tu turno de ${c.serviceName} con ${c.professionalName}.`,
+      `¿Nos contás cómo te fue? Te lleva un minuto y ayuda a otras personas a elegir: ${c.manageUrl}/resena`,
+    ].join("\n\n"),
+    whatsapp: {
+      template: "orgatodo_pedido_resena",
+      params: [c.clientName, c.serviceName, c.professionalName, `${c.manageUrl}/resena`],
+    },
+  }),
 };
 
 export function buildMessage(kind: Kind, context: MessageContext): Message {

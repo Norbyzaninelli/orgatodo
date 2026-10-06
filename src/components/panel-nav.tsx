@@ -7,6 +7,7 @@ const LINKS = [
   { href: "/panel", label: "Turnos" },
   { href: "/panel/facturacion", label: "Facturación" },
   { href: "/panel/resumen", label: "Resumen" },
+  { href: "/panel/resenas", label: "Reseñas" },
   { href: "/panel/servicios", label: "Servicios" },
   { href: "/panel/horarios", label: "Horarios" },
   { href: "/panel/centro", label: "Centro" },

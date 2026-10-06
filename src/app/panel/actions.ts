@@ -2,10 +2,15 @@
 
 import { and, eq, inArray } from "drizzle-orm";
 import { revalidatePath } from "next/cache";
+import { redirect } from "next/navigation";
 import { z } from "zod";
 import { db, schema } from "@/db";
 import { requireProfessional } from "@/lib/auth";
+import { BookingError } from "@/lib/agenda/booking";
+import { createManualBooking, manualBookingSchema } from "@/lib/agenda/manual";
+import { manageableProfessionals } from "@/lib/equipo";
 import { notifyBookingEvent } from "@/lib/notifications";
+import { ReviewError, replyToReview } from "@/lib/resenas";
 import type { FormState } from "@/lib/form-state";
 import { listingSchema } from "@/lib/listing";
 import { parsePriceToCents, timeToMinutes } from "@/lib/time";
@@ -27,6 +32,8 @@ export async function setBookingStatusAction(formData: FormData) {
   const pro = await requireProfessional();
   const id = z.uuid().parse(formData.get("bookingId"));
   const status = z.enum(["confirmado", "realizado", "ausente", "cancelado"]).parse(formData.get("status"));
+  // Quien administra un centro también maneja los turnos del equipo.
+  const team = await manageableProfessionals(pro);
 
   const updated = await db
     .update(schema.bookings)
@@ -39,17 +46,72 @@ export async function setBookingStatusAction(formData: FormData) {
     .where(
       and(
         eq(schema.bookings.id, id),
-        eq(schema.bookings.professionalId, pro.id),
+        inArray(
+          schema.bookings.professionalId,
+          team.map((p) => p.id),
+        ),
         inArray(schema.bookings.status, ALLOWED_TRANSITIONS[status] as ("reservado" | "confirmado" | "realizado" | "ausente")[]),
       ),
     )
-    .returning({ id: schema.bookings.id });
+    .returning({ id: schema.bookings.id, professionalId: schema.bookings.professionalId });
 
-  if (updated.length > 0 && status === "confirmado") await notifyBookingEvent(id, "confirmado");
-  if (updated.length > 0 && status === "cancelado") await notifyBookingEvent(id, "cancelado_por_profesional");
+  if (updated.length > 0) {
+    if (status === "confirmado") await notifyBookingEvent(id, "confirmado");
+    if (status === "cancelado") await notifyBookingEvent(id, "cancelado_por_profesional");
+    if (status === "realizado") await notifyBookingEvent(id, "realizado");
+    // Si deja de estar realizado, el pedido de reseña que no salió ya no corresponde.
+    if (status !== "realizado") await skipPendingReviewRequest(id);
+  }
+  const owner = team.find((p) => p.id === updated[0]?.professionalId);
   revalidatePath("/panel");
   revalidatePath("/panel/resumen");
-  revalidatePublic(pro.slug);
+  revalidatePath("/panel/centro/agenda");
+  revalidatePublic(owner?.slug ?? pro.slug);
+}
+
+async function skipPendingReviewRequest(bookingId: string) {
+  await db
+    .update(schema.notifications)
+    .set({ status: "omitido" })
+    .where(
+      and(
+        eq(schema.notifications.bookingId, bookingId),
+        eq(schema.notifications.kind, "pedido_resena"),
+        eq(schema.notifications.status, "pendiente"),
+      ),
+    );
+}
+
+/** Turno cargado a mano desde el panel, propio o de alguien del equipo si administra el centro. */
+export async function createManualBookingAction(_prev: FormState, formData: FormData): Promise<FormState> {
+  const actor = await requireProfessional();
+  // El select de servicio trae "profesional:servicio", así un centro elige ambos en un solo campo.
+  const [professionalId, serviceId] = String(formData.get("servicio") ?? "").split(":");
+  const parsed = manualBookingSchema.safeParse({ ...Object.fromEntries(formData), professionalId, serviceId });
+  if (!parsed.success) return { error: parsed.error.issues[0].message };
+  const team = await manageableProfessionals(actor);
+  const target = team.find((p) => p.id === parsed.data.professionalId);
+  if (!target) return { error: "No podés cargar turnos para ese profesional" };
+
+  let booking;
+  try {
+    booking = await createManualBooking(target, parsed.data);
+  } catch (error) {
+    if (error instanceof BookingError) return { error: error.message };
+    throw error;
+  }
+  await notifyBookingEvent(booking.id, "cargado", {
+    notifyClient: parsed.data.notifyClient === "on",
+    notifyProfessional: target.id !== actor.id,
+  });
+  revalidatePath("/panel");
+  revalidatePath("/panel/centro/agenda");
+  revalidatePublic(target.slug);
+  redirect(
+    formData.get("volver") === "equipo"
+      ? `/panel/centro/agenda?dia=${parsed.data.date}&cargado=1`
+      : "/panel?cargado=1",
+  );
 }
 
 const paymentMethodSchema = z.enum(["efectivo", "transferencia", "mercado_pago", "tarjeta", "otro"]);
@@ -302,4 +364,27 @@ export async function setPublishedAction(formData: FormData) {
     .where(eq(schema.professionals.id, pro.id));
   revalidatePath("/panel", "layout");
   revalidatePublic(pro.slug);
+}
+
+// --- Reseñas --------------------------------------------------------------
+
+const replySchema = z.object({
+  reviewId: z.uuid(),
+  reply: z.string().trim().max(1000, "La respuesta puede tener hasta 1000 caracteres"),
+});
+
+/** Respuesta pública a una reseña; vacía la borra. */
+export async function replyReviewAction(_prev: FormState, formData: FormData): Promise<FormState> {
+  const pro = await requireProfessional();
+  const parsed = replySchema.safeParse(Object.fromEntries(formData));
+  if (!parsed.success) return { error: parsed.error.issues[0].message };
+  try {
+    await replyToReview(pro, parsed.data.reviewId, parsed.data.reply || null);
+  } catch (error) {
+    if (error instanceof ReviewError) return { error: error.message };
+    throw error;
+  }
+  revalidatePath("/panel/resenas");
+  revalidatePublic(pro.slug);
+  return { ok: parsed.data.reply ? "Respuesta publicada" : "Respuesta borrada" };
 }

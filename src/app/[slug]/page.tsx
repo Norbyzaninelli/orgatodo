@@ -4,7 +4,9 @@ import { notFound } from "next/navigation";
 import type { Service } from "@/db/schema";
 import { getPublishedProfessional } from "@/lib/agenda/queries";
 import { getPublishedCentro, getPublishedCentroOf } from "@/lib/centros";
+import { RatingBadge, Stars } from "@/components/stars";
 import { formatDuration, formatPrice } from "@/lib/format";
+import { combineRatings, latestReviews, ratingsFor } from "@/lib/resenas";
 
 export async function generateMetadata(props: PageProps<"/[slug]">): Promise<Metadata> {
   const { slug } = await props.params;
@@ -25,12 +27,18 @@ export default async function PublicPage(props: PageProps<"/[slug]">) {
 }
 
 async function ProfessionalPage({ professional, services }: NonNullable<Awaited<ReturnType<typeof getPublishedProfessional>>>) {
-  const centro = await getPublishedCentroOf(professional);
+  const [centro, ratings, reviews] = await Promise.all([
+    getPublishedCentroOf(professional),
+    ratingsFor([professional.id]),
+    latestReviews(professional.id),
+  ]);
+  const rating = ratings.get(professional.id) ?? null;
 
   return (
     <div className="mx-auto w-full max-w-3xl space-y-8">
       <section className="space-y-2">
         <h1 className="text-3xl font-bold tracking-tight">{professional.displayName}</h1>
+        <RatingBadge rating={rating} />
         {professional.bio && <p className="text-muted">{professional.bio}</p>}
         {professional.address && <p className="text-sm text-muted">{professional.address}</p>}
         {centro && (
@@ -51,16 +59,44 @@ async function ProfessionalPage({ professional, services }: NonNullable<Awaited<
           <ServiceList slug={professional.slug} services={services} />
         )}
       </section>
+
+      {reviews.length > 0 && (
+        <section className="space-y-3">
+          <h2 className="text-sm font-semibold uppercase tracking-wide text-muted">Reseñas</h2>
+          <ul className="space-y-3">
+            {reviews.map((review) => (
+              <li key={review.id} className="space-y-1 rounded-xl border border-border bg-surface p-4">
+                <div className="flex flex-wrap items-center gap-2">
+                  <Stars value={review.rating} />
+                  <span className="text-sm font-medium">{review.authorName}</span>
+                  <span className="text-sm text-muted">
+                    {review.createdAt.toLocaleDateString("es-AR", { month: "long", year: "numeric", timeZone: professional.timezone })}
+                  </span>
+                </div>
+                {review.comment && <p className="text-sm">{review.comment}</p>}
+                {review.reply && (
+                  <p className="mt-2 border-l-2 border-brand pl-3 text-sm text-muted">
+                    <span className="font-medium text-foreground">Respuesta de {professional.displayName}:</span> {review.reply}
+                  </p>
+                )}
+              </li>
+            ))}
+          </ul>
+        </section>
+      )}
     </div>
   );
 }
 
-function CentroPage({ organization, team }: NonNullable<Awaited<ReturnType<typeof getPublishedCentro>>>) {
+async function CentroPage({ organization, team }: NonNullable<Awaited<ReturnType<typeof getPublishedCentro>>>) {
   const withServices = team.filter((member) => member.services.length > 0);
+  const ratings = await ratingsFor(withServices.map((m) => m.professional.id));
+  const overall = combineRatings([...ratings.values()]);
   return (
     <div className="mx-auto w-full max-w-3xl space-y-8">
       <section className="space-y-2">
         <h1 className="text-3xl font-bold tracking-tight">{organization.name}</h1>
+        <RatingBadge rating={overall} />
         {organization.description && <p className="text-muted">{organization.description}</p>}
         {organization.address && <p className="text-sm text-muted">{organization.address}</p>}
         {organization.phone && (
@@ -95,6 +131,7 @@ function CentroPage({ organization, team }: NonNullable<Awaited<ReturnType<typeo
                   {professional.displayName}
                 </Link>
               </h2>
+              <RatingBadge rating={ratings.get(professional.id) ?? null} />
               {professional.bio && <p className="text-sm text-muted">{professional.bio}</p>}
             </div>
             <ServiceList slug={professional.slug} services={services} />

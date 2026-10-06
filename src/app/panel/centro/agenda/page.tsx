@@ -2,11 +2,12 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { redirect } from "next/navigation";
 import { and, asc, eq, gte, inArray, lt } from "drizzle-orm";
+import { BookingActions } from "@/components/booking-actions";
 import { db, schema } from "@/db";
 import { requireProfessional } from "@/lib/auth";
 import { addDays, localToInstant, toLocalDate } from "@/lib/agenda/slots";
 import { getOrganization, listMembers } from "@/lib/centros";
-import { formatLongDate, formatPrice, formatTime } from "@/lib/format";
+import { capitalize, formatLongDate, formatPrice, formatTime } from "@/lib/format";
 
 export const metadata: Metadata = { title: "Agenda del equipo" };
 
@@ -25,7 +26,8 @@ export default async function TeamAgendaPage(props: PageProps<"/panel/centro/age
 
   const tz = pro.timezone;
   const today = toLocalDate(new Date(), tz);
-  const { dia } = await props.searchParams;
+  const { dia, cargado } = await props.searchParams;
+  const now = new Date();
   const day = typeof dia === "string" && /^\d{4}-\d{2}-\d{2}$/.test(dia) ? dia : today;
 
   const members = await listMembers(org.id);
@@ -73,8 +75,10 @@ export default async function TeamAgendaPage(props: PageProps<"/panel/centro/age
         </nav>
       </div>
 
+      {cargado && <p className="rounded-lg bg-brand-soft p-3 text-sm text-brand">Turno cargado.</p>}
+
       <p className="text-lg font-semibold">
-        <span className="capitalize">{label}</span> · <span className="font-normal text-muted">{active.length === 1 ? "1 turno" : `${active.length} turnos`}</span>
+        {capitalize(label)} · <span className="font-normal text-muted">{active.length === 1 ? "1 turno" : `${active.length} turnos`}</span>
       </p>
 
       <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
@@ -82,7 +86,15 @@ export default async function TeamAgendaPage(props: PageProps<"/panel/centro/age
           const own = rows.filter((r) => r.booking.professionalId === member.id);
           return (
             <section key={member.id} className="space-y-2 rounded-xl border border-border bg-surface p-3">
-              <h2 className="font-semibold">{member.displayName}</h2>
+              <div className="flex items-center justify-between gap-2">
+                <h2 className="font-semibold">{member.displayName}</h2>
+                <Link
+                  href={`/panel/turnos/nuevo?profesional=${member.id}&dia=${day}&volver=equipo`}
+                  className="rounded-lg border border-border px-2 py-0.5 text-sm font-medium hover:border-brand"
+                >
+                  + Turno
+                </Link>
+              </div>
               {own.length === 0 ? (
                 <p className="text-sm text-muted">Sin turnos</p>
               ) : (
@@ -101,6 +113,14 @@ export default async function TeamAgendaPage(props: PageProps<"/panel/centro/age
                       <p className="text-muted">
                         {booking.serviceName} · {formatPrice(booking.priceCents)} · {STATUS_LABEL[booking.status]}
                       </p>
+                      {client.phone && (
+                        <a href={`https://wa.me/${client.phone.replace(/\D/g, "")}`} className="text-brand hover:underline">
+                          {client.phone}
+                        </a>
+                      )}
+                      <div className="mt-2 flex flex-wrap gap-2 empty:hidden">
+                        <BookingActions booking={booking} now={now} />
+                      </div>
                     </li>
                   ))}
                 </ul>

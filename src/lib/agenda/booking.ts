@@ -28,7 +28,7 @@ export class BookingError extends Error {
 /** Código de Postgres cuando se viola la restricción que impide turnos superpuestos. */
 const EXCLUSION_VIOLATION = "23P01";
 
-function isExclusionViolation(error: unknown): boolean {
+export function isExclusionViolation(error: unknown): boolean {
   let current: unknown = error;
   while (current && typeof current === "object") {
     if ("code" in current && (current as { code?: string }).code === EXCLUSION_VIOLATION) return true;

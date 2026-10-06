@@ -53,7 +53,9 @@ export const notificationKind = pgEnum("notification_kind", [
   "recordatorio",
   "cancelado_por_cliente",
   "cancelado_por_profesional",
+  "pedido_resena",
 ]);
+export const bookingSource = pgEnum("booking_source", ["online", "manual"]);
 export const notificationStatus = pgEnum("notification_status", ["pendiente", "enviado", "fallido", "omitido"]);
 
 const timestamps = {
@@ -227,7 +229,8 @@ export const clients = pgTable(
       .notNull()
       .references(() => professionals.id, { onDelete: "cascade" }),
     name: text("name").notNull(),
-    email: text("email").notNull(),
+    /** Opcional en clientes cargados a mano; quien reserva online siempre lo deja. */
+    email: text("email"),
     phone: text("phone"),
     /** Para facturar: DNI o CUIT, opcional. */
     documentNumber: text("document_number"),
@@ -252,6 +255,8 @@ export const bookings = pgTable(
     startsAt: timestamp("starts_at", { withTimezone: true }).notNull(),
     endsAt: timestamp("ends_at", { withTimezone: true }).notNull(),
     status: bookingStatus("status").notNull().default("reservado"),
+    /** Online: lo reservó el cliente. Manual: lo cargó el profesional o quien administra el centro. */
+    source: bookingSource("source").notNull().default("online"),
     /** Copia del servicio al momento de reservar, para que la factura no cambie si se edita el servicio. */
     serviceName: text("service_name").notNull(),
     priceCents: integer("price_cents").notNull(),
@@ -268,6 +273,31 @@ export const bookings = pgTable(
     ...timestamps,
   },
   (t) => [index("bookings_professional_starts_idx").on(t.professionalId, t.startsAt)],
+);
+
+/** Reseña que deja el cliente después de un turno realizado; una por turno. */
+export const reviews = pgTable(
+  "reviews",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    bookingId: uuid("booking_id")
+      .notNull()
+      .unique()
+      .references(() => bookings.id, { onDelete: "cascade" }),
+    professionalId: uuid("professional_id")
+      .notNull()
+      .references(() => professionals.id, { onDelete: "cascade" }),
+    /** De 1 a 5 estrellas. */
+    rating: smallint("rating").notNull(),
+    comment: text("comment"),
+    /** Nombre que se muestra: el nombre de pila del cliente. */
+    authorName: text("author_name").notNull(),
+    /** Respuesta pública del profesional. */
+    reply: text("reply"),
+    repliedAt: timestamp("replied_at", { withTimezone: true }),
+    ...timestamps,
+  },
+  (t) => [index("reviews_professional_idx").on(t.professionalId, t.createdAt)],
 );
 
 /** Gastos que el profesional carga a mano para ver su resultado del mes. */
@@ -427,5 +457,6 @@ export type Service = typeof services.$inferSelect;
 export type Booking = typeof bookings.$inferSelect;
 export type Notification = typeof notifications.$inferSelect;
 export type Expense = typeof expenses.$inferSelect;
+export type Review = typeof reviews.$inferSelect;
 export type ArcaConnection = typeof arcaConnections.$inferSelect;
 export type Invoice = typeof invoices.$inferSelect;

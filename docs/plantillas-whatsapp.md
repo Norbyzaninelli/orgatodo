@@ -30,3 +30,7 @@ mismo orden. El texto se puede ajustar, pero cada `{{n}}` tiene que seguir signi
 ## orgatodo_cancelado_por_profesional
 
 > Hola {{1}}, {{2}} canceló tu turno de {{3}} del {{4}} a las {{5}}. Podés reservar otro horario desde su página.
+
+## orgatodo_pedido_resena
+
+> Hola {{1}}, gracias por tu turno de {{2}} con {{3}}. ¿Nos contás cómo te fue? Te lleva un minuto: {{4}}
