@@ -95,7 +95,8 @@ export default async function SummaryPage({ searchParams }: PageProps<"/panel/re
   const current = summary.get(month)!;
   const monthExpenses = expenses.filter((e) => monthOf(e.date) === month);
   const invoiced12 = netInvoicedCents(issuedInvoices);
-  const limit = categoryLimitCents(connection?.monotributoCategory ?? null, to);
+  // La tabla de ARCA cambia el día 1 de febrero y de agosto: la del primer día rige todo el mes.
+  const limit = categoryLimitCents(connection?.monotributoCategory ?? null, monthBounds(month).first);
   const cap = connection?.verifiedAt ? capProgress(invoiced12, limit) : null;
   const chart = months.slice(-6).map((m) => summary.get(m)!);
   const chartMax = Math.max(1, ...chart.map((s) => Math.max(s.incomeCents, s.expensesCents)));
